@@ -67,6 +67,8 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [newPatient, setNewPatient] = useState<Partial<Patient>>({
     species: 'Perro',
   });
@@ -103,7 +105,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
       });
 
       await logActivity({
-        type: 'consultation', // Using consultation as a generic type for now or I can add 'patient' to types
+        type: 'consultation',
         description: `Registró al paciente "${newPatient.name}"`,
         patientName: newPatient.name,
         clinicId: profile.clinicId
@@ -114,6 +116,35 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
       toast.success('Paciente agregado correctamente.');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'patients');
+    }
+  };
+
+  const handleEditPatient = async () => {
+    if (!profile || !editingPatient || !editingPatient.name || !editingPatient.ownerName) {
+      toast.error('Por favor completa los campos obligatorios.');
+      return;
+    }
+
+    try {
+      const { id, ...data } = editingPatient;
+      await updateDoc(doc(db, 'patients', id), {
+        ...data,
+        updatedAt: Timestamp.now(),
+      });
+
+      await logActivity({
+        type: 'consultation',
+        description: `Actualizó información del paciente "${editingPatient.name}"`,
+        patientId: id,
+        patientName: editingPatient.name,
+        clinicId: profile.clinicId
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingPatient(null);
+      toast.success('Información actualizada correctamente.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `patients/${editingPatient?.id}`);
     }
   };
 
@@ -257,6 +288,116 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Editar Paciente</DialogTitle>
+            </DialogHeader>
+            {editingPatient && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">Nombre Mascota *</Label>
+                    <Input 
+                      id="edit-name" 
+                      value={editingPatient.name || ''} 
+                      onChange={e => setEditingPatient({...editingPatient, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-species">Especie *</Label>
+                    <Select 
+                      value={editingPatient.species} 
+                      onValueChange={v => setEditingPatient({...editingPatient, species: v})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Perro">Perro</SelectItem>
+                        <SelectItem value="Gato">Gato</SelectItem>
+                        <SelectItem value="Ave">Ave</SelectItem>
+                        <SelectItem value="Conejo">Conejo</SelectItem>
+                        <SelectItem value="Otro">Otro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-race">Raza</Label>
+                    <Input 
+                      id="edit-race" 
+                      value={editingPatient.race || ''} 
+                      onChange={e => setEditingPatient({...editingPatient, race: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-age">Edad (años)</Label>
+                    <Input 
+                      id="edit-age" 
+                      type="number" 
+                      value={editingPatient.age || ''} 
+                      onChange={e => setEditingPatient({...editingPatient, age: Number(e.target.value)})}
+                    />
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ownerName">Nombre del Dueño *</Label>
+                  <Input 
+                    id="edit-ownerName" 
+                    value={editingPatient.ownerName || ''} 
+                    onChange={e => setEditingPatient({...editingPatient, ownerName: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ownerPhone">Teléfono del Dueño</Label>
+                  <Input 
+                    id="edit-ownerPhone" 
+                    value={editingPatient.ownerPhone || ''} 
+                    onChange={e => setEditingPatient({...editingPatient, ownerPhone: e.target.value})}
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ownerAddress">Dirección</Label>
+                  <Input 
+                    id="edit-ownerAddress" 
+                    value={editingPatient.ownerAddress || ''} 
+                    onChange={e => setEditingPatient({...editingPatient, ownerAddress: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-ownerNeighborhood">Barrio / Localidad</Label>
+                    <Input 
+                      id="edit-ownerNeighborhood" 
+                      value={editingPatient.ownerNeighborhood || ''} 
+                      onChange={e => setEditingPatient({...editingPatient, ownerNeighborhood: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-addressNotes">Notas de Dirección</Label>
+                    <Input 
+                      id="edit-addressNotes" 
+                      value={editingPatient.addressNotes || ''} 
+                      onChange={e => setEditingPatient({...editingPatient, addressNotes: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setIsEditDialogOpen(false);
+                setEditingPatient(null);
+              }}>Cancelar</Button>
+              <Button onClick={handleEditPatient}>Guardar Cambios</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Filters */}
@@ -298,9 +439,23 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <Badge variant="secondary" className="font-normal">
-                        {patient.age || 0} años
-                      </Badge>
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPatient(patient);
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Badge variant="secondary" className="font-normal">
+                          {patient.age || 0} años
+                        </Badge>
+                      </div>
                       {patient.nextVaccineDate && isBefore(patient.nextVaccineDate.toDate(), new Date()) && (
                         <Badge variant="destructive" className="text-[10px] h-5 gap-1">
                           <AlertCircle className="w-3 h-3" /> Vacuna Vencida
