@@ -14,7 +14,8 @@ import {
   Trash2,
   Edit2,
   ChevronRight,
-  Users
+  Users,
+  AlertCircle
 } from 'lucide-react';
 import { 
   collection, 
@@ -52,10 +53,10 @@ import {
 } from './ui/select';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
+import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
 
 interface PatientsViewProps {
   onSelectPatient: (patient: Patient) => void;
@@ -100,6 +101,14 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
         clinicId: profile.clinicId,
         createdAt: Timestamp.now(),
       });
+
+      await logActivity({
+        type: 'consultation', // Using consultation as a generic type for now or I can add 'patient' to types
+        description: `Registró al paciente "${newPatient.name}"`,
+        patientName: newPatient.name,
+        clinicId: profile.clinicId
+      });
+
       setIsAddDialogOpen(false);
       setNewPatient({ species: 'Perro' });
       toast.success('Paciente agregado correctamente.');
@@ -258,9 +267,16 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                         </p>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="font-normal">
-                      {patient.age || 0} años
-                    </Badge>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant="secondary" className="font-normal">
+                        {patient.age || 0} años
+                      </Badge>
+                      {patient.nextVaccineDate && isBefore(patient.nextVaccineDate.toDate(), new Date()) && (
+                        <Badge variant="destructive" className="text-[10px] h-5 gap-1">
+                          <AlertCircle className="w-3 h-3" /> Vacuna Vencida
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="space-y-2">

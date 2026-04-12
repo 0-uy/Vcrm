@@ -10,6 +10,14 @@ export interface UserProfile {
   clinicId: string;
 }
 
+export interface Clinic {
+  id: string;
+  name: string;
+  joinCode: string;
+  ownerUid: string;
+  createdAt: Timestamp;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -21,6 +29,8 @@ export interface Patient {
   ownerPhone?: string;
   clinicId: string;
   createdAt: Timestamp;
+  lastVisitAt?: Timestamp;
+  nextVaccineDate?: Timestamp;
 }
 
 export type ClinicalEventType = 'consultation' | 'vaccine' | 'treatment' | 'note';
@@ -28,11 +38,33 @@ export type ClinicalEventType = 'consultation' | 'vaccine' | 'treatment' | 'note
 export interface ClinicalEvent {
   id: string;
   patientId: string;
+  patientName?: string; // Added for activity feed
   date: Timestamp;
   type: ClinicalEventType;
   description: string;
   nextDate?: Timestamp;
   clinicId: string;
+}
+
+export interface ActivityEvent {
+  id: string;
+  date: Timestamp;
+  type: ClinicalEventType | 'appointment' | 'inventory';
+  description: string;
+  patientId?: string;
+  patientName?: string;
+  clinicId: string;
+  userName?: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  stock: number;
+  minStock: number;
+  unit: string;
+  clinicId: string;
+  updatedAt: Timestamp;
 }
 
 export type AppointmentStatus = 'pending' | 'attended' | 'cancelled';

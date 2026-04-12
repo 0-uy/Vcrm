@@ -12,7 +12,8 @@ import {
   Plus,
   Bell,
   Sun,
-  Moon
+  Moon,
+  Package
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { auth } from '../firebase';
@@ -37,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'patients', label: 'Pacientes', icon: Users },
     { id: 'appointments', label: 'Agenda', icon: Calendar },
+    { id: 'inventory', label: 'Inventario', icon: Package },
     { id: 'logs', label: 'Bitácora', icon: ClipboardList },
   ];
 

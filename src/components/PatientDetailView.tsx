@@ -55,7 +55,7 @@ import { toast } from 'sonner';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
+import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
 
 interface PatientDetailViewProps {
   patient: Patient;
@@ -95,11 +95,43 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     }
 
     try {
+      // 1. Add clinical event to patient history
       await addDoc(collection(db, 'patients', patient.id, 'history'), {
         ...newEvent,
         patientId: patient.id,
+        patientName: patient.name,
         clinicId: profile.clinicId,
       });
+
+      // 2. Update patient metadata
+      const patientUpdate: any = {
+        lastVisitAt: newEvent.date || Timestamp.now()
+      };
+      if (newEvent.type === 'vaccine' && newEvent.nextDate) {
+        patientUpdate.nextVaccineDate = newEvent.nextDate;
+        
+        // 2b. Add to root vaccines collection for clinic-wide alerts
+        await addDoc(collection(db, 'vaccines'), {
+          patientId: patient.id,
+          patientName: patient.name,
+          clinicId: profile.clinicId,
+          type: newEvent.description,
+          date: newEvent.date || Timestamp.now(),
+          nextDate: newEvent.nextDate,
+          status: 'pending'
+        });
+      }
+      await updateDoc(doc(db, 'patients', patient.id), patientUpdate);
+
+      // 3. Add to global activity collection
+      await logActivity({
+        type: newEvent.type as any,
+        description: `${newEvent.type === 'vaccine' ? 'Vacunación' : 'Consulta'} para ${patient.name}: ${newEvent.description}`,
+        patientId: patient.id,
+        patientName: patient.name,
+        clinicId: profile.clinicId,
+      });
+
       setIsAddEventOpen(false);
       setNewEvent({ type: 'consultation', date: Timestamp.now() });
       toast.success('Evento agregado correctamente.');

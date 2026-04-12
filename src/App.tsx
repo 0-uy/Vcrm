@@ -6,13 +6,14 @@ import PatientsView from './components/PatientsView';
 import PatientDetailView from './components/PatientDetailView';
 import AppointmentsView from './components/AppointmentsView';
 import LogsView from './components/LogsView';
+import InventoryView from './components/InventoryView';
 import LoginView from './components/LoginView';
 import { Patient } from './types';
 import { Toaster } from './components/ui/sonner';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const { user, loading, isAuthReady } = useAuth();
+  const { user, profile, loading, isAuthReady } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
@@ -27,7 +28,7 @@ export default function App() {
     );
   }
 
-  if (!user) {
+  if (!user || !profile) {
     return (
       <>
         <LoginView />
@@ -97,6 +98,17 @@ export default function App() {
             transition={{ duration: 0.2 }}
           >
             <LogsView />
+          </motion.div>
+        );
+      case 'inventory':
+        return (
+          <motion.div
+            key="inventory"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <InventoryView />
           </motion.div>
         );
       default:

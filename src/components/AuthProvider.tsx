@@ -43,21 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (docSnap && docSnap.exists()) {
           setProfile(docSnap.data() as UserProfile);
         } else {
-          // Create a default profile if it doesn't exist (e.g. first login)
-          // In a real SaaS, this would be handled during signup
-          const newProfile: UserProfile = {
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || '',
-            role: 'admin', // Default to admin for the first user of a clinic
-            clinicId: `clinic-${Math.random().toString(36).substr(2, 9)}`, // Unique ID
-          };
-          try {
-            await setDoc(docRef, newProfile);
-            setProfile(newProfile);
-          } catch (error) {
-            handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
-          }
+          setProfile(null);
         }
       } else {
         setProfile(null);

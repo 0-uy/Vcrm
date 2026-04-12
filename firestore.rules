@@ -2,6 +2,14 @@
 // Assumed Data Model
 // ===============================================================
 //
+// Collection: clinics
+// Document ID: {clinicId}
+// Fields:
+//   - name: string
+//   - joinCode: string (6 chars)
+//   - ownerUid: string
+//   - createdAt: timestamp
+//
 // Collection: users
 // Document ID: {userId}
 // Fields:
@@ -23,34 +31,38 @@
 //   - ownerPhone: string (optional)
 //   - clinicId: string (required)
 //   - createdAt: timestamp (required)
+//   - lastVisitAt: timestamp (optional)
 //
-// Collection: patients/{patientId}/history
-// Document ID: {eventId}
+// Collection: activity
+// Document ID: {activityId}
 // Fields:
-//   - patientId: string (required)
-//   - date: timestamp (required)
-//   - type: string (required, enum: ['consultation', 'vaccine', 'treatment', 'note'])
-//   - description: string (required)
-//   - nextDate: timestamp (optional)
-//   - clinicId: string (required)
-//
-// Collection: appointments
-// Document ID: {appointmentId}
-// Fields:
-//   - patientId: string (required)
-//   - patientName: string (required)
-//   - date: timestamp (required)
-//   - reason: string (required)
-//   - status: string (required, enum: ['pending', 'attended', 'cancelled'])
-//   - clinicId: string (required)
-//
-// Collection: logs
-// Document ID: {logId}
-// Fields:
-//   - date: timestamp (required)
-//   - content: string (required)
+//   - date: timestamp
+//   - type: string
+//   - description: string
 //   - patientId: string (optional)
-//   - clinicId: string (required)
+//   - patientName: string (optional)
+//   - clinicId: string
+//   - userName: string
+//
+// Collection: inventory
+// Document ID: {itemId}
+// Fields:
+//   - name: string
+//   - stock: number
+//   - minStock: number
+//   - clinicId: string
+//   - updatedAt: timestamp
+//
+// Collection: vaccines
+// Document ID: {vaccineId}
+// Fields:
+//   - patientId: string
+//   - patientName: string
+//   - clinicId: string
+//   - type: string
+//   - date: timestamp
+//   - nextDate: timestamp
+//   - status: string
 //
 // ===============================================================
 
@@ -97,6 +109,13 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
 
+    function isValidClinic(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.joinCode is string && data.joinCode.size() == 6 &&
+             data.ownerUid is string &&
+             data.createdAt is timestamp;
+    }
+
     function isValidUser(data) {
       return data.uid is string &&
              data.email is string && isValidEmail(data.email) &&
@@ -120,6 +139,28 @@ service cloud.firestore {
              data.clinicId is string;
     }
 
+    function isValidActivity(data) {
+      return data.date is timestamp &&
+             data.type is string &&
+             data.description is string &&
+             data.clinicId is string;
+    }
+
+    function isValidVaccine(data) {
+      return data.patientId is string &&
+             data.clinicId is string &&
+             data.date is timestamp &&
+             data.nextDate is timestamp;
+    }
+
+    function isValidInventory(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.stock is number &&
+             data.minStock is number &&
+             data.clinicId is string &&
+             data.updatedAt is timestamp;
+    }
+
     function isValidAppointment(data) {
       return data.patientId is string &&
              data.patientName is string &&
@@ -139,9 +180,15 @@ service cloud.firestore {
     // Rules
     // ===============================================================
 
+    match /clinics/{clinicId} {
+      allow read: if isAuthenticated(); // Needed to check joinCode
+      allow create: if isAuthenticated() && isValidClinic(request.resource.data);
+      allow update: if isAuthenticated() && isClinicMember(clinicId) && isAdmin();
+    }
+
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || getUserData().clinicId == resource.data.clinicId);
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (request.auth.uid == userId || isAdmin());
+      allow read: if isAuthenticated() && (request.auth.uid == userId || (userExists() && getUserData().clinicId == resource.data.clinicId));
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && request.auth.uid == userId;
       allow update: if isAuthenticated() && isValidUser(request.resource.data) && (request.auth.uid == userId || isAdmin()) &&
                     request.resource.data.clinicId == resource.data.clinicId; // Cannot change clinic
     }
@@ -156,9 +203,28 @@ service cloud.firestore {
       match /history/{eventId} {
         allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
         allow create: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-        allow update: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(resource.data.clinicId);
+        allow update: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(request.resource.data.clinicId);
         allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
       }
+    }
+
+    match /activity/{activityId} {
+      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
+      allow create: if isAuthenticated() && isValidActivity(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+    }
+
+    match /vaccines/{vaccineId} {
+      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
+      allow create: if isAuthenticated() && isValidVaccine(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidVaccine(request.resource.data) && isClinicMember(resource.data.clinicId);
+      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+    }
+
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
+      allow create: if isAuthenticated() && isValidInventory(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidInventory(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
     }
 
     match /appointments/{appointmentId} {
@@ -171,7 +237,7 @@ service cloud.firestore {
     match /logs/{logId} {
       allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
       allow create: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow update: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(request.resource.data.clinicId);
       allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
     }
   }

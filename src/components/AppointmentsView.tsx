@@ -51,7 +51,7 @@ import { toast } from 'sonner';
 import { format, startOfDay, endOfDay, addDays, subDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
+import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
 
 const AppointmentsView: React.FC = () => {
   const { profile } = useAuth();
@@ -104,6 +104,16 @@ const AppointmentsView: React.FC = () => {
         patientName: patient?.name || 'Desconocido',
         clinicId: profile.clinicId,
       });
+
+      // Add to global activity
+      await logActivity({
+        type: 'appointment',
+        description: `Nuevo turno para ${patient?.name || 'Desconocido'}: ${newAppointment.reason}`,
+        patientId: newAppointment.patientId,
+        patientName: patient?.name || 'Desconocido',
+        clinicId: profile.clinicId,
+      });
+
       setIsAddDialogOpen(false);
       setNewAppointment({ status: 'pending', date: Timestamp.fromDate(new Date()) });
       toast.success('Turno programado correctamente.');
@@ -113,8 +123,20 @@ const AppointmentsView: React.FC = () => {
   };
 
   const updateStatus = async (id: string, status: Appointment['status']) => {
+    if (!profile) return;
     try {
+      const app = appointments.find(a => a.id === id);
       await updateDoc(doc(db, 'appointments', id), { status });
+      
+      // Add to global activity
+      await logActivity({
+        type: 'appointment',
+        description: `Turno de ${app?.patientName} marcado como ${status === 'attended' ? 'Atendido' : 'Cancelado'}`,
+        patientId: app?.patientId,
+        patientName: app?.patientName,
+        clinicId: profile.clinicId,
+      });
+
       toast.success('Estado actualizado.');
     } catch (error) {
       console.error(error);

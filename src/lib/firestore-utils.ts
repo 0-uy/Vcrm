@@ -1,4 +1,6 @@
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { ActivityEvent } from '../types';
 
 export enum OperationType {
   CREATE = 'create',
@@ -49,4 +51,16 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
+}
+
+export async function logActivity(activity: Omit<ActivityEvent, 'id' | 'date'>) {
+  try {
+    await addDoc(collection(db, 'activity'), {
+      ...activity,
+      date: Timestamp.now(),
+      userName: auth.currentUser?.displayName || auth.currentUser?.email || 'Sistema',
+    });
+  } catch (error) {
+    console.error('Error logging activity:', error);
+  }
 }
