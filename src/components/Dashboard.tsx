@@ -22,7 +22,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
-import { Patient, Appointment, ActivityEvent, InventoryItem } from '../types';
+import { Patient, Appointment, ActivityEvent, InventoryItem, Charge } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
@@ -47,6 +47,7 @@ const Dashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [charges, setCharges] = useState<Charge[]>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -97,11 +98,20 @@ const Dashboard: React.FC = () => {
       handleFirestoreError(error, OperationType.LIST, 'inventory');
     });
 
+    // Fetch Charges
+    const qCharges = query(collection(db, 'charges'), where('clinicId', '==', clinicId));
+    const unsubCharges = onSnapshot(qCharges, (snapshot) => {
+      setCharges(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Charge)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'charges');
+    });
+
     return () => {
       unsubPatients();
       unsubAppointments();
       unsubActivity();
       unsubInventory();
+      unsubCharges();
     };
   }, [profile]);
 
@@ -110,11 +120,20 @@ const Dashboard: React.FC = () => {
   const threeMonthsAgo = subMonths(new Date(), 3);
   const inactivePatients = patients.filter(p => !p.lastVisitAt || isBefore(p.lastVisitAt.toDate(), threeMonthsAgo));
 
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthlyIncome = charges
+    .filter(c => c.status === 'paid' && c.date.toDate().getMonth() === currentMonth && c.date.toDate().getFullYear() === currentYear)
+    .reduce((sum, c) => sum + c.amount, 0);
+  const totalPending = charges
+    .filter(c => c.status === 'pending')
+    .reduce((sum, c) => sum + c.amount, 0);
+
   const stats = [
     { label: 'Total Pacientes', value: patients.length, icon: Users, color: 'text-blue-500' },
     { label: 'Turnos Hoy', value: appointments.filter(a => a.status === 'pending').length, icon: Calendar, color: 'text-green-500' },
-    { label: 'Vacunas Vencidas', value: overdueVaccines.length, icon: AlertCircle, color: 'text-orange-500' },
-    { label: 'Stock Bajo', value: lowStockItems.length, icon: Package, color: 'text-destructive' },
+    { label: 'Ingresos Mes', value: `$${monthlyIncome.toFixed(0)}`, icon: TrendingUp, color: 'text-emerald-500' },
+    { label: 'Pendiente Cobro', value: `$${totalPending.toFixed(0)}`, icon: AlertTriangle, color: 'text-orange-500' },
   ];
 
   // Mock data for the chart
@@ -195,6 +214,7 @@ const Dashboard: React.FC = () => {
                         {activity.type === 'consultation' ? <Clock className="w-4 h-4" /> :
                          activity.type === 'vaccine' ? <AlertCircle className="w-4 h-4" /> :
                          activity.type === 'appointment' ? <Calendar className="w-4 h-4" /> :
+                         activity.type === 'billing' ? <TrendingUp className="w-4 h-4" /> :
                          <Package className="w-4 h-4" />}
                       </div>
                       <div className="space-y-1">

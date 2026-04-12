@@ -13,7 +13,8 @@ import {
   Bell,
   Sun,
   Moon,
-  Package
+  Package,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { auth } from '../firebase';
@@ -41,6 +42,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'inventory', label: 'Inventario', icon: Package },
     { id: 'logs', label: 'Bitácora', icon: ClipboardList },
   ];
+
+  if (profile?.role === 'superadmin') {
+    menuItems.push({ id: 'superadmin', label: 'Super Admin', icon: ShieldCheck });
+  }
 
   const handleLogout = () => auth.signOut();
 
@@ -111,7 +116,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{profile?.displayName || 'Usuario'}</p>
-                <p className="text-xs text-muted-foreground truncate capitalize">{profile?.role}</p>
+                <p className="text-xs text-muted-foreground truncate capitalize">
+                  {profile?.role === 'clinic_admin' ? 'Administrador' : 
+                   profile?.role === 'superadmin' ? 'Super Admin' : 
+                   profile?.role === 'staff' ? 'Personal' : profile?.role}
+                </p>
               </div>
             </div>
             <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleLogout}>

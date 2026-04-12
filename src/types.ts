@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type UserRole = 'admin' | 'veterinarian';
+export type UserRole = 'superadmin' | 'clinic_admin' | 'staff';
 
 export interface UserProfile {
   uid: string;
@@ -10,12 +10,18 @@ export interface UserProfile {
   clinicId: string;
 }
 
+export type ClinicStatus = 'active' | 'suspended' | 'trial';
+
 export interface Clinic {
   id: string;
   name: string;
   joinCode: string;
   ownerUid: string;
   createdAt: Timestamp;
+  status: ClinicStatus;
+  plan: string;
+  expiresAt: Timestamp;
+  suspendedReason?: string;
 }
 
 export interface Patient {
@@ -52,12 +58,25 @@ export interface ClinicalEvent {
 export interface ActivityEvent {
   id: string;
   date: Timestamp;
-  type: ClinicalEventType | 'appointment' | 'inventory';
+  type: ClinicalEventType | 'appointment' | 'inventory' | 'billing';
   description: string;
   patientId?: string;
   patientName?: string;
   clinicId: string;
   userName?: string;
+}
+
+export type ChargeStatus = 'pending' | 'paid';
+
+export interface Charge {
+  id: string;
+  patientId: string;
+  patientName: string;
+  clinicId: string;
+  date: Timestamp;
+  concept: string;
+  amount: number;
+  status: ChargeStatus;
 }
 
 export interface InventoryItem {

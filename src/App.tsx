@@ -7,15 +7,22 @@ import PatientDetailView from './components/PatientDetailView';
 import AppointmentsView from './components/AppointmentsView';
 import LogsView from './components/LogsView';
 import InventoryView from './components/InventoryView';
+import SuperAdminView from './components/SuperAdminView';
 import LoginView from './components/LoginView';
 import { Patient } from './types';
 import { Toaster } from './components/ui/sonner';
+import { ShieldAlert, LogOut } from 'lucide-react';
+import { auth } from './firebase';
+import { signOut } from 'firebase/auth';
+import { Button } from './components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const { user, profile, loading, isAuthReady } = useAuth();
+  const { user, profile, clinic, loading, isAuthReady } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+
+  const isSuspended = clinic?.status === 'suspended' && profile?.role !== 'superadmin';
 
   if (!isAuthReady || loading) {
     return (
@@ -34,6 +41,38 @@ export default function App() {
         <LoginView />
         <Toaster position="top-center" />
       </>
+    );
+  }
+
+  if (isSuspended) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="w-20 h-20 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight">Cuenta Suspendida</h1>
+            <p className="text-muted-foreground">
+              Lo sentimos, el acceso para la clínica <strong>{clinic?.name}</strong> ha sido suspendido.
+            </p>
+            {clinic?.suspendedReason && (
+              <div className="mt-4 p-4 bg-muted rounded-lg text-sm italic">
+                " {clinic.suspendedReason} "
+              </div>
+            )}
+          </div>
+          <div className="pt-4">
+            <Button variant="outline" className="gap-2" onClick={() => signOut(auth)}>
+              <LogOut className="w-4 h-4" /> Cerrar Sesión
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Si crees que esto es un error, por favor contacta al soporte técnico.
+          </p>
+        </div>
+        <Toaster position="top-center" />
+      </div>
     );
   }
 
@@ -109,6 +148,17 @@ export default function App() {
             transition={{ duration: 0.2 }}
           >
             <InventoryView />
+          </motion.div>
+        );
+      case 'superadmin':
+        return (
+          <motion.div
+            key="superadmin"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <SuperAdminView />
           </motion.div>
         );
       default:

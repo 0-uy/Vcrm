@@ -14,7 +14,10 @@ import {
   AlertCircle,
   MoreHorizontal,
   MapPin,
-  Home
+  Home,
+  DollarSign,
+  CreditCard,
+  Receipt
 } from 'lucide-react';
 import { 
   collection, 
@@ -30,7 +33,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
-import { Patient, ClinicalEvent, ClinicalEventType } from '../types';
+import { Patient, ClinicalEvent, ClinicalEventType, Charge, ChargeStatus } from '../types';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
@@ -67,11 +70,19 @@ interface PatientDetailViewProps {
 const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }) => {
   const { profile } = useAuth();
   const [history, setHistory] = useState<ClinicalEvent[]>([]);
+  const [charges, setCharges] = useState<Charge[]>([]);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
   const [isEditPatientOpen, setIsEditPatientOpen] = useState(false);
   const [editPatient, setEditPatient] = useState<Partial<Patient>>({});
   const [newEvent, setNewEvent] = useState<Partial<ClinicalEvent>>({
     type: 'consultation',
+    date: Timestamp.now(),
+  });
+  const [newCharge, setNewCharge] = useState<Partial<Charge>>({
+    concept: 'Consulta',
+    amount: 0,
+    status: 'pending',
     date: Timestamp.now(),
   });
 
@@ -93,7 +104,23 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
       handleFirestoreError(error, OperationType.LIST, `patients/${patient.id}/history`);
     });
 
-    return () => unsubscribe();
+    // Fetch charges
+    const qCharges = query(
+      collection(db, 'charges'),
+      where('patientId', '==', patient.id),
+      orderBy('date', 'desc')
+    );
+
+    const unsubscribeCharges = onSnapshot(qCharges, (snapshot) => {
+      setCharges(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Charge)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'charges');
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeCharges();
+    };
   }, [profile, patient.id]);
 
   const handleAddEvent = async () => {
@@ -175,6 +202,48 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     }
   };
 
+  const handleAddCharge = async () => {
+    if (!profile || !newCharge.concept || !newCharge.amount) {
+      toast.error('Por favor completa los campos obligatorios.');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'charges'), {
+        ...newCharge,
+        patientId: patient.id,
+        patientName: patient.name,
+        clinicId: profile.clinicId,
+        date: Timestamp.now(),
+      });
+
+      await logActivity({
+        type: 'billing',
+        description: `Nuevo cargo para ${patient.name}: ${newCharge.concept} ($${newCharge.amount})`,
+        patientId: patient.id,
+        patientName: patient.name,
+        clinicId: profile.clinicId,
+      });
+
+      setIsAddChargeOpen(false);
+      setNewCharge({ concept: 'Consulta', amount: 0, status: 'pending', date: Timestamp.now() });
+      toast.success('Cargo registrado correctamente.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'charges');
+    }
+  };
+
+  const toggleChargeStatus = async (charge: Charge) => {
+    if (!profile) return;
+    const newStatus: ChargeStatus = charge.status === 'pending' ? 'paid' : 'pending';
+    try {
+      await updateDoc(doc(db, 'charges', charge.id), { status: newStatus });
+      toast.success(`Cargo marcado como ${newStatus === 'paid' ? 'Pagado' : 'Pendiente'}`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `charges/${charge.id}`);
+    }
+  };
+
   const getEventIcon = (type: ClinicalEventType) => {
     switch (type) {
       case 'consultation': return <Stethoscope className="w-4 h-4" />;
@@ -198,6 +267,9 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
   const vaccines = history.filter(e => e.type === 'vaccine');
   const nextVaccines = vaccines.filter(v => v.nextDate && isAfter(v.nextDate.toDate(), new Date()));
   const overdueVaccines = vaccines.filter(v => v.nextDate && isBefore(v.nextDate.toDate(), new Date()));
+
+  const totalPaid = charges.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0);
+  const totalPending = charges.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -398,6 +470,69 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isAddChargeOpen} onOpenChange={setIsAddChargeOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
+                <DollarSign className="w-4 h-4" /> Nuevo Cargo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Registrar Cargo</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="concept">Concepto *</Label>
+                  <Select 
+                    value={newCharge.concept} 
+                    onValueChange={v => setNewCharge({...newCharge, concept: v})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar concepto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Consulta">Consulta</SelectItem>
+                      <SelectItem value="Vacuna">Vacuna</SelectItem>
+                      <SelectItem value="Tratamiento">Tratamiento</SelectItem>
+                      <SelectItem value="Cirugía">Cirugía</SelectItem>
+                      <SelectItem value="Medicamento">Medicamento</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Monto ($) *</Label>
+                  <Input 
+                    id="amount" 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={newCharge.amount || ''} 
+                    onChange={e => setNewCharge({...newCharge, amount: Number(e.target.value)})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Estado</Label>
+                  <Select 
+                    value={newCharge.status} 
+                    onValueChange={v => setNewCharge({...newCharge, status: v as ChargeStatus})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Estado del pago" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendiente</SelectItem>
+                      <SelectItem value="paid">Pagado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddChargeOpen(false)}>Cancelar</Button>
+                <Button onClick={handleAddCharge}>Registrar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -475,9 +610,10 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         {/* Clinical History Timeline */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="history">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="history">Historial Clínico</TabsTrigger>
               <TabsTrigger value="vaccines">Vacunas</TabsTrigger>
+              <TabsTrigger value="billing">Facturación</TabsTrigger>
             </TabsList>
             
             <TabsContent value="history" className="mt-6">
@@ -563,6 +699,77 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                     </Card>
                   ))
                 )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="billing" className="mt-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className="bg-green-500/5 border-green-500/20">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total Pagado</p>
+                        <p className="text-xl font-bold text-green-600">${totalPaid.toFixed(2)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-orange-500/5 border-orange-500/20">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                        <Receipt className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total Pendiente</p>
+                        <p className="text-xl font-bold text-orange-600">${totalPending.toFixed(2)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-4">
+                  {charges.length === 0 ? (
+                    <div className="text-center py-12 border rounded-lg border-dashed">
+                      <p className="text-muted-foreground">No hay cargos registrados.</p>
+                    </div>
+                  ) : (
+                    charges.map((charge) => (
+                      <Card key={charge.id} className="overflow-hidden">
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center",
+                              charge.status === 'paid' ? "bg-green-500/10 text-green-500" : "bg-orange-500/10 text-orange-500"
+                            )}>
+                              <DollarSign className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <p className="font-bold">{charge.concept}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(charge.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6">
+                            <p className="font-bold text-lg">${charge.amount.toFixed(2)}</p>
+                            <Badge 
+                              variant={charge.status === 'paid' ? 'default' : 'outline'}
+                              className={cn(
+                                "cursor-pointer transition-all hover:scale-105",
+                                charge.status === 'paid' ? "bg-green-500 hover:bg-green-600" : "text-orange-500 border-orange-500 hover:bg-orange-50"
+                              )}
+                              onClick={() => toggleChargeStatus(charge)}
+                            >
+                              {charge.status === 'paid' ? 'Pagado' : 'Pendiente'}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>

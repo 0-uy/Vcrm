@@ -8,7 +8,7 @@
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "veterinarian"] },
+        "role": { "type": "string", "enum": ["superadmin", "clinic_admin", "staff"] },
         "clinicId": { "type": "string" }
       },
       "required": ["uid", "email", "role", "clinicId"]
@@ -69,9 +69,44 @@
         "clinicId": { "type": "string" }
       },
       "required": ["date", "content", "clinicId"]
+    },
+    "Charge": {
+      "title": "Charge",
+      "description": "A billing entry",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "concept": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid"] }
+      },
+      "required": ["patientId", "clinicId", "date", "concept", "amount", "status"]
+    },
+    "Clinic": {
+      "title": "Clinic",
+      "description": "A veterinary clinic",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "joinCode": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "suspended", "trial"] },
+        "plan": { "type": "string" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "suspendedReason": { "type": "string" }
+      },
+      "required": ["name", "joinCode", "ownerUid", "createdAt", "status", "plan", "expiresAt"]
     }
   },
   "firestore": {
+    "/clinics/{clinicId}": {
+      "schema": "Clinic",
+      "description": "Clinic information and status"
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "User profiles and roles"
@@ -91,6 +126,10 @@
     "/logs/{logId}": {
       "schema": "InternalLog",
       "description": "Internal clinic logs"
+    },
+    "/charges/{chargeId}": {
+      "schema": "Charge",
+      "description": "Billing and charges"
     }
   }
 }

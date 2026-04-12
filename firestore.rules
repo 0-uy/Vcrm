@@ -9,6 +9,10 @@
 //   - joinCode: string (6 chars)
 //   - ownerUid: string
 //   - createdAt: timestamp
+//   - status: string (enum: ['active', 'suspended', 'trial'])
+//   - plan: string
+//   - expiresAt: timestamp
+//   - suspendedReason: string (optional)
 //
 // Collection: users
 // Document ID: {userId}
@@ -16,7 +20,7 @@
 //   - uid: string (required)
 //   - email: string (required, email format)
 //   - displayName: string (optional)
-//   - role: string (required, enum: ['admin', 'veterinarian'])
+//   - role: string (required, enum: ['superadmin', 'clinic_admin', 'staff'])
 //   - clinicId: string (required)
 //
 // Collection: patients
@@ -64,6 +68,17 @@
 //   - nextDate: timestamp
 //   - status: string
 //
+// Collection: charges
+// Document ID: {chargeId}
+// Fields:
+//   - patientId: string
+//   - patientName: string
+//   - clinicId: string
+//   - date: timestamp
+//   - concept: string
+//   - amount: number
+//   - status: string (enum: ['pending', 'paid'])
+//
 // ===============================================================
 
 rules_version = '2';
@@ -90,11 +105,19 @@ service cloud.firestore {
       return isAuthenticated() && userExists() && getUserData().clinicId == clinicId;
     }
 
-    function isAdmin() {
+    function isSuperAdmin() {
       return isAuthenticated() && (
-        (userExists() && getUserData().role == 'admin') ||
+        (userExists() && getUserData().role == 'superadmin') ||
         (request.auth.token.email == "imcorreamauricio@gmail.com" && request.auth.token.email_verified == true)
       );
+    }
+
+    function isClinicAdmin() {
+      return isSuperAdmin() || (isAuthenticated() && userExists() && getUserData().role == 'clinic_admin');
+    }
+
+    function isClinicActive(clinicId) {
+      return isSuperAdmin() || (get(/databases/$(database)/documents/clinics/$(clinicId)).data.status in ['active', 'trial']);
     }
 
     function hasOnlyAllowedFields(fields) {
@@ -113,13 +136,16 @@ service cloud.firestore {
       return data.name is string && data.name.size() > 0 &&
              data.joinCode is string && data.joinCode.size() == 6 &&
              data.ownerUid is string &&
-             data.createdAt is timestamp;
+             data.createdAt is timestamp &&
+             data.status in ['active', 'suspended', 'trial'] &&
+             data.plan is string &&
+             data.expiresAt is timestamp;
     }
 
     function isValidUser(data) {
       return data.uid is string &&
              data.email is string && isValidEmail(data.email) &&
-             data.role in ['admin', 'veterinarian'] &&
+             data.role in ['superadmin', 'clinic_admin', 'staff'] &&
              data.clinicId is string;
     }
 
@@ -180,69 +206,87 @@ service cloud.firestore {
              data.clinicId is string;
     }
 
+    function isValidCharge(data) {
+      return data.patientId is string &&
+             data.patientName is string &&
+             data.clinicId is string &&
+             data.date is timestamp &&
+             data.concept is string && data.concept.size() > 0 &&
+             data.amount is number && data.amount >= 0 &&
+             data.status in ['pending', 'paid'];
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
 
     match /clinics/{clinicId} {
-      allow read: if isAuthenticated(); // Needed to check joinCode
+      allow read: if isAuthenticated(); // Needed to check joinCode and status
       allow create: if isAuthenticated() && isValidClinic(request.resource.data);
-      allow update: if isAuthenticated() && isClinicMember(clinicId) && isAdmin();
+      allow update: if isSuperAdmin() || (isAuthenticated() && isClinicMember(clinicId) && isClinicAdmin() && 
+                    !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'plan', 'expiresAt', 'suspendedReason']));
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || (userExists() && getUserData().clinicId == resource.data.clinicId));
+      allow read: if isAuthenticated() && (request.auth.uid == userId || (userExists() && getUserData().clinicId == resource.data.clinicId) || isSuperAdmin());
       allow create: if isAuthenticated() && isValidUser(request.resource.data) && request.auth.uid == userId;
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (request.auth.uid == userId || isAdmin()) &&
-                    request.resource.data.clinicId == resource.data.clinicId; // Cannot change clinic
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (request.auth.uid == userId || isClinicAdmin()) &&
+                    (isSuperAdmin() || request.resource.data.clinicId == resource.data.clinicId);
     }
 
     match /patients/{patientId} {
-      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
-      allow create: if isAuthenticated() && isValidPatient(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow update: if isAuthenticated() && isValidPatient(request.resource.data) && isClinicMember(resource.data.clinicId) &&
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidPatient(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidPatient(request.resource.data) && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId) &&
                     request.resource.data.clinicId == resource.data.clinicId;
-      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
 
       match /history/{eventId} {
-        allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
-        allow create: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-        allow update: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-        allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+        allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+        allow create: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+        allow update: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+        allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
       }
     }
 
     match /activity/{activityId} {
-      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
-      allow create: if isAuthenticated() && isValidActivity(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidActivity(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
     }
 
     match /vaccines/{vaccineId} {
-      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
-      allow create: if isAuthenticated() && isValidVaccine(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow update: if isAuthenticated() && isValidVaccine(request.resource.data) && isClinicMember(resource.data.clinicId);
-      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidVaccine(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidVaccine(request.resource.data) && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
     }
 
     match /inventory/{itemId} {
-      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
-      allow create: if isAuthenticated() && isValidInventory(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow update: if isAuthenticated() && isValidInventory(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidInventory(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidInventory(request.resource.data) && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
     }
 
     match /appointments/{appointmentId} {
-      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
-      allow create: if isAuthenticated() && isValidAppointment(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow update: if isAuthenticated() && isValidAppointment(request.resource.data) && isClinicMember(resource.data.clinicId);
-      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidAppointment(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidAppointment(request.resource.data) && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
     }
 
     match /logs/{logId} {
-      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
-      allow create: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow update: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(request.resource.data.clinicId);
-      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+    }
+
+    match /charges/{chargeId} {
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidCharge(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidCharge(request.resource.data) && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
     }
   }
 }

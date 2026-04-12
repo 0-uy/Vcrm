@@ -86,12 +86,18 @@ const LoginView: React.FC = () => {
       const newJoinCode = Math.random().toString(36).substr(2, 6).toUpperCase();
       
       // 1. Create Clinic
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30); // 30 days trial
+
       await setDoc(doc(db, 'clinics', clinicId), {
         id: clinicId,
         name: clinicName,
         joinCode: newJoinCode,
         ownerUid: user.uid,
         createdAt: Timestamp.now(),
+        status: 'trial',
+        plan: 'Trial',
+        expiresAt: Timestamp.fromDate(expiresAt),
       });
 
       // 2. Create User Profile
@@ -99,7 +105,7 @@ const LoginView: React.FC = () => {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName || displayName,
-        role: 'admin',
+        role: user.email === 'imcorreamauricio@gmail.com' ? 'superadmin' : 'clinic_admin',
         clinicId: clinicId,
       });
 
@@ -133,7 +139,7 @@ const LoginView: React.FC = () => {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName || displayName,
-        role: 'veterinarian',
+        role: user.email === 'imcorreamauricio@gmail.com' ? 'superadmin' : 'staff',
         clinicId: clinicData.id,
       });
 
