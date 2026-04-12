@@ -89,7 +89,41 @@ export interface InventoryItem {
   updatedAt: Timestamp;
 }
 
-export type AppointmentStatus = 'pending' | 'attended' | 'cancelled';
+export interface Prescription {
+  id: string;
+  patientId: string;
+  clinicId: string;
+  date: Timestamp;
+  medication: string;
+  dose: string;
+  frequency: string;
+  duration: string;
+  notes?: string;
+}
+
+export interface SOAPNote {
+  id: string;
+  patientId: string;
+  clinicId: string;
+  date: Timestamp;
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+}
+
+export interface Attachment {
+  id: string;
+  patientId: string;
+  clinicId: string;
+  date: Timestamp;
+  name: string;
+  type: string; // 'image', 'pdf', 'doc', etc.
+  url: string;
+  size?: number;
+}
+
+export type AppointmentStatus = 'pending' | 'in-consultation' | 'attended' | 'cancelled';
 
 export interface Appointment {
   id: string;

@@ -17,7 +17,13 @@ import {
   Home,
   DollarSign,
   CreditCard,
-  Receipt
+  Receipt,
+  Pill,
+  ClipboardType,
+  Paperclip,
+  FileUp,
+  ExternalLink,
+  Download
 } from 'lucide-react';
 import { 
   collection, 
@@ -33,7 +39,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
-import { Patient, ClinicalEvent, ClinicalEventType, Charge, ChargeStatus } from '../types';
+import { Patient, ClinicalEvent, ClinicalEventType, Charge, ChargeStatus, Prescription, SOAPNote, Attachment } from '../types';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
@@ -71,9 +77,17 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
   const { profile } = useAuth();
   const [history, setHistory] = useState<ClinicalEvent[]>([]);
   const [charges, setCharges] = useState<Charge[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [soapNotes, setSoapNotes] = useState<SOAPNote[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
+  const [isAddPrescriptionOpen, setIsAddPrescriptionOpen] = useState(false);
+  const [isAddSOAPOpen, setIsAddSOAPOpen] = useState(false);
+  const [isAddAttachmentOpen, setIsAddAttachmentOpen] = useState(false);
   const [isEditPatientOpen, setIsEditPatientOpen] = useState(false);
+  
   const [editPatient, setEditPatient] = useState<Partial<Patient>>({});
   const [newEvent, setNewEvent] = useState<Partial<ClinicalEvent>>({
     type: 'consultation',
@@ -83,6 +97,26 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     concept: 'Consulta',
     amount: 0,
     status: 'pending',
+    date: Timestamp.now(),
+  });
+  const [newPrescription, setNewPrescription] = useState<Partial<Prescription>>({
+    medication: '',
+    dose: '',
+    frequency: '',
+    duration: '',
+    date: Timestamp.now(),
+  });
+  const [newSOAP, setNewSOAP] = useState<Partial<SOAPNote>>({
+    subjective: '',
+    objective: '',
+    assessment: '',
+    plan: '',
+    date: Timestamp.now(),
+  });
+  const [newAttachment, setNewAttachment] = useState<Partial<Attachment>>({
+    name: '',
+    url: '',
+    type: 'image',
     date: Timestamp.now(),
   });
 
@@ -117,9 +151,48 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
       handleFirestoreError(error, OperationType.LIST, 'charges');
     });
 
+    // Fetch prescriptions
+    const qPrescriptions = query(
+      collection(db, 'prescriptions'),
+      where('patientId', '==', patient.id),
+      orderBy('date', 'desc')
+    );
+    const unsubscribePrescriptions = onSnapshot(qPrescriptions, (snapshot) => {
+      setPrescriptions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'prescriptions');
+    });
+
+    // Fetch SOAP notes
+    const qSOAP = query(
+      collection(db, 'soap_notes'),
+      where('patientId', '==', patient.id),
+      orderBy('date', 'desc')
+    );
+    const unsubscribeSOAP = onSnapshot(qSOAP, (snapshot) => {
+      setSoapNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SOAPNote)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'soap_notes');
+    });
+
+    // Fetch attachments
+    const qAttachments = query(
+      collection(db, 'attachments'),
+      where('patientId', '==', patient.id),
+      orderBy('date', 'desc')
+    );
+    const unsubscribeAttachments = onSnapshot(qAttachments, (snapshot) => {
+      setAttachments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attachment)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'attachments');
+    });
+
     return () => {
       unsubscribe();
       unsubscribeCharges();
+      unsubscribePrescriptions();
+      unsubscribeSOAP();
+      unsubscribeAttachments();
     };
   }, [profile, patient.id]);
 
@@ -241,6 +314,96 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
       toast.success(`Cargo marcado como ${newStatus === 'paid' ? 'Pagado' : 'Pendiente'}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `charges/${charge.id}`);
+    }
+  };
+
+  const handleAddPrescription = async () => {
+    if (!profile || !newPrescription.medication || !newPrescription.dose) {
+      toast.error('Por favor completa los campos obligatorios.');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'prescriptions'), {
+        ...newPrescription,
+        patientId: patient.id,
+        clinicId: profile.clinicId,
+        date: Timestamp.now(),
+      });
+
+      await logActivity({
+        type: 'treatment',
+        description: `Nueva receta para ${patient.name}: ${newPrescription.medication}`,
+        patientId: patient.id,
+        patientName: patient.name,
+        clinicId: profile.clinicId,
+      });
+
+      setIsAddPrescriptionOpen(false);
+      setNewPrescription({ medication: '', dose: '', frequency: '', duration: '', date: Timestamp.now() });
+      toast.success('Receta agregada correctamente.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'prescriptions');
+    }
+  };
+
+  const handleAddSOAP = async () => {
+    if (!profile || !newSOAP.assessment) {
+      toast.error('Por favor completa al menos el diagnóstico/evaluación.');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'soap_notes'), {
+        ...newSOAP,
+        patientId: patient.id,
+        clinicId: profile.clinicId,
+        date: Timestamp.now(),
+      });
+
+      await logActivity({
+        type: 'consultation',
+        description: `Nueva nota SOAP para ${patient.name}`,
+        patientId: patient.id,
+        patientName: patient.name,
+        clinicId: profile.clinicId,
+      });
+
+      setIsAddSOAPOpen(false);
+      setNewSOAP({ subjective: '', objective: '', assessment: '', plan: '', date: Timestamp.now() });
+      toast.success('Nota SOAP guardada.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'soap_notes');
+    }
+  };
+
+  const handleAddAttachment = async () => {
+    if (!profile || !newAttachment.name || !newAttachment.url) {
+      toast.error('Por favor completa los campos obligatorios.');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'attachments'), {
+        ...newAttachment,
+        patientId: patient.id,
+        clinicId: profile.clinicId,
+        date: Timestamp.now(),
+      });
+
+      await logActivity({
+        type: 'note',
+        description: `Nuevo adjunto para ${patient.name}: ${newAttachment.name}`,
+        patientId: patient.id,
+        patientName: patient.name,
+        clinicId: profile.clinicId,
+      });
+
+      setIsAddAttachmentOpen(false);
+      setNewAttachment({ name: '', url: '', type: 'image', date: Timestamp.now() });
+      toast.success('Adjunto registrado.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'attachments');
     }
   };
 
@@ -533,6 +696,190 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* New PMS Dialogs */}
+          <Dialog open={isAddPrescriptionOpen} onOpenChange={setIsAddPrescriptionOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Pill className="w-4 h-4" /> Receta
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Nueva Receta</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="medication">Medicamento *</Label>
+                  <Input 
+                    id="medication" 
+                    placeholder="Ej: Amoxicilina 500mg" 
+                    value={newPrescription.medication}
+                    onChange={e => setNewPrescription({...newPrescription, medication: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dose">Dosis *</Label>
+                    <Input 
+                      id="dose" 
+                      placeholder="Ej: 1 tableta" 
+                      value={newPrescription.dose}
+                      onChange={e => setNewPrescription({...newPrescription, dose: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="frequency">Frecuencia *</Label>
+                    <Input 
+                      id="frequency" 
+                      placeholder="Ej: Cada 12 horas" 
+                      value={newPrescription.frequency}
+                      onChange={e => setNewPrescription({...newPrescription, frequency: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duración *</Label>
+                  <Input 
+                    id="duration" 
+                    placeholder="Ej: 7 días" 
+                    value={newPrescription.duration}
+                    onChange={e => setNewPrescription({...newPrescription, duration: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notas adicionales</Label>
+                  <Textarea 
+                    id="notes" 
+                    placeholder="Instrucciones especiales..." 
+                    value={newPrescription.notes}
+                    onChange={e => setNewPrescription({...newPrescription, notes: e.target.value})}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddPrescriptionOpen(false)}>Cancelar</Button>
+                <Button onClick={handleAddPrescription}>Guardar Receta</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddSOAPOpen} onOpenChange={setIsAddSOAPOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <ClipboardType className="w-4 h-4" /> Nota SOAP
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nota Clínica SOAP</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subjective">Subjective (S)</Label>
+                  <Textarea 
+                    id="subjective" 
+                    placeholder="Motivo de consulta, síntomas reportados..." 
+                    value={newSOAP.subjective}
+                    onChange={e => setNewSOAP({...newSOAP, subjective: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="objective">Objective (O)</Label>
+                  <Textarea 
+                    id="objective" 
+                    placeholder="Examen físico, constantes vitales..." 
+                    value={newSOAP.objective}
+                    onChange={e => setNewSOAP({...newSOAP, objective: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="assessment">Assessment (A) *</Label>
+                  <Textarea 
+                    id="assessment" 
+                    placeholder="Diagnóstico presuntivo o definitivo..." 
+                    value={newSOAP.assessment}
+                    onChange={e => setNewSOAP({...newSOAP, assessment: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plan">Plan (P)</Label>
+                  <Textarea 
+                    id="plan" 
+                    placeholder="Tratamiento, pruebas a realizar, seguimiento..." 
+                    value={newSOAP.plan}
+                    onChange={e => setNewSOAP({...newSOAP, plan: e.target.value})}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddSOAPOpen(false)}>Cancelar</Button>
+                <Button onClick={handleAddSOAP}>Guardar Nota</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddAttachmentOpen} onOpenChange={setIsAddAttachmentOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Paperclip className="w-4 h-4" /> Adjunto
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Agregar Adjunto</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="att-name">Nombre del archivo *</Label>
+                  <Input 
+                    id="att-name" 
+                    placeholder="Ej: Radiografía Tórax" 
+                    value={newAttachment.name}
+                    onChange={e => setNewAttachment({...newAttachment, name: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="att-type">Tipo</Label>
+                  <Select 
+                    value={newAttachment.type} 
+                    onValueChange={v => setNewAttachment({...newAttachment, type: v})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="image">Imagen / Foto</SelectItem>
+                      <SelectItem value="pdf">Análisis (PDF)</SelectItem>
+                      <SelectItem value="study">Estudio / Informe</SelectItem>
+                      <SelectItem value="other">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="att-url">URL del archivo *</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      id="att-url" 
+                      placeholder="https://..." 
+                      value={newAttachment.url}
+                      onChange={e => setNewAttachment({...newAttachment, url: e.target.value})}
+                    />
+                    <Button variant="secondary" size="icon" type="button">
+                      <FileUp className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Nota: En esta demo, ingresa una URL directa al archivo.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddAttachmentOpen(false)}>Cancelar</Button>
+                <Button onClick={handleAddAttachment}>Agregar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -610,10 +957,13 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         {/* Clinical History Timeline */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="history">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="history">Historial Clínico</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="history">Historial</TabsTrigger>
+              <TabsTrigger value="soap">SOAP</TabsTrigger>
+              <TabsTrigger value="prescriptions">Recetas</TabsTrigger>
               <TabsTrigger value="vaccines">Vacunas</TabsTrigger>
-              <TabsTrigger value="billing">Facturación</TabsTrigger>
+              <TabsTrigger value="attachments">Adjuntos</TabsTrigger>
+              <TabsTrigger value="billing">Facturas</TabsTrigger>
             </TabsList>
             
             <TabsContent value="history" className="mt-6">
@@ -661,6 +1011,152 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                         </Card>
                       </div>
                     </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="soap" className="mt-6">
+              <div className="space-y-6">
+                {soapNotes.length === 0 ? (
+                  <div className="text-center py-12 border rounded-lg border-dashed">
+                    <p className="text-muted-foreground">No hay notas SOAP registradas.</p>
+                  </div>
+                ) : (
+                  soapNotes.map((note) => (
+                    <Card key={note.id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <ClipboardType className="w-4 h-4 text-primary" />
+                            Nota SOAP
+                          </CardTitle>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {format(note.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="font-bold text-xs text-muted-foreground uppercase">Subjective (S)</p>
+                            <p className="bg-muted/30 p-2 rounded">{note.subjective || 'N/A'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-bold text-xs text-muted-foreground uppercase">Objective (O)</p>
+                            <p className="bg-muted/30 p-2 rounded">{note.objective || 'N/A'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-bold text-xs text-muted-foreground uppercase">Assessment (A)</p>
+                            <p className="bg-primary/5 p-2 rounded font-medium border border-primary/10">{note.assessment}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-bold text-xs text-muted-foreground uppercase">Plan (P)</p>
+                            <p className="bg-muted/30 p-2 rounded">{note.plan || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="prescriptions" className="mt-6">
+              <div className="space-y-4">
+                {prescriptions.length === 0 ? (
+                  <div className="text-center py-12 border rounded-lg border-dashed">
+                    <p className="text-muted-foreground">No hay recetas registradas.</p>
+                  </div>
+                ) : (
+                  prescriptions.map((p) => (
+                    <Card key={p.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                              <Pill className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold">{p.medication}</h4>
+                              <p className="text-xs text-muted-foreground">
+                                {format(p.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
+                              </p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <Download className="w-3 h-3" /> PDF
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="bg-muted/50 p-2 rounded">
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Dosis</p>
+                            <p className="font-medium">{p.dose}</p>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded">
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Frecuencia</p>
+                            <p className="font-medium">{p.frequency}</p>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded">
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Duración</p>
+                            <p className="font-medium">{p.duration}</p>
+                          </div>
+                        </div>
+                        {p.notes && (
+                          <div className="mt-3 p-2 bg-primary/5 rounded text-xs italic border border-primary/10">
+                            <p className="font-bold not-italic mb-1">Indicaciones:</p>
+                            {p.notes}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="attachments" className="mt-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {attachments.length === 0 ? (
+                  <div className="col-span-full text-center py-12 border rounded-lg border-dashed">
+                    <p className="text-muted-foreground">No hay adjuntos registrados.</p>
+                  </div>
+                ) : (
+                  attachments.map((att) => (
+                    <Card key={att.id} className="overflow-hidden group">
+                      <CardContent className="p-0">
+                        <div className="flex items-center p-4 gap-4">
+                          <div className={cn(
+                            "w-12 h-12 rounded-lg flex items-center justify-center shrink-0",
+                            att.type === 'image' ? "bg-blue-500/10 text-blue-500" : 
+                            att.type === 'pdf' ? "bg-red-500/10 text-red-500" : "bg-muted text-muted-foreground"
+                          )}>
+                            {att.type === 'image' ? <FileUp className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm truncate">{att.name}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase">
+                              {att.type} • {format(att.date.toDate(), 'dd/MM/yyyy')}
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="icon" asChild>
+                            <a href={att.url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </Button>
+                        </div>
+                        {att.type === 'image' && (
+                          <div className="h-32 bg-muted relative overflow-hidden border-t">
+                            <img 
+                              src={att.url} 
+                              alt={att.name} 
+                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   ))
                 )}
               </div>

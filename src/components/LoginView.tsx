@@ -105,7 +105,7 @@ const LoginView: React.FC = () => {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName || displayName,
-        role: user.email === 'imcorreamauricio@gmail.com' ? 'superadmin' : 'clinic_admin',
+        role: 'clinic_admin',
         clinicId: clinicId,
       });
 
@@ -139,7 +139,7 @@ const LoginView: React.FC = () => {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName || displayName,
-        role: user.email === 'imcorreamauricio@gmail.com' ? 'superadmin' : 'staff',
+        role: 'staff',
         clinicId: clinicData.id,
       });
 

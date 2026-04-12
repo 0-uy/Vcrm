@@ -100,6 +100,52 @@
         "suspendedReason": { "type": "string" }
       },
       "required": ["name", "joinCode", "ownerUid", "createdAt", "status", "plan", "expiresAt"]
+    },
+    "Prescription": {
+      "title": "Prescription",
+      "description": "Medical prescription for a patient",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "medication": { "type": "string" },
+        "dose": { "type": "string" },
+        "frequency": { "type": "string" },
+        "duration": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["patientId", "clinicId", "date", "medication", "dose", "frequency", "duration"]
+    },
+    "SOAPNote": {
+      "title": "SOAP Note",
+      "description": "Structured clinical note",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "subjective": { "type": "string" },
+        "objective": { "type": "string" },
+        "assessment": { "type": "string" },
+        "plan": { "type": "string" }
+      },
+      "required": ["patientId", "clinicId", "date", "subjective", "objective", "assessment", "plan"]
+    },
+    "Attachment": {
+      "title": "Attachment",
+      "description": "File or image attached to a patient record",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "url": { "type": "string" },
+        "size": { "type": "number" }
+      },
+      "required": ["patientId", "clinicId", "date", "name", "type", "url"]
     }
   },
   "firestore": {
@@ -130,6 +176,18 @@
     "/charges/{chargeId}": {
       "schema": "Charge",
       "description": "Billing and charges"
+    },
+    "/prescriptions/{id}": {
+      "schema": "Prescription",
+      "description": "Patient prescriptions"
+    },
+    "/soap_notes/{id}": {
+      "schema": "SOAPNote",
+      "description": "Structured clinical notes"
+    },
+    "/attachments/{id}": {
+      "schema": "Attachment",
+      "description": "Patient file attachments"
     }
   }
 }

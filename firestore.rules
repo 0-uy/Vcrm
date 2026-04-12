@@ -106,10 +106,7 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return isAuthenticated() && (
-        (userExists() && getUserData().role == 'superadmin') ||
-        (request.auth.token.email == "imcorreamauricio@gmail.com" && request.auth.token.email_verified == true)
-      );
+      return isAuthenticated() && userExists() && getUserData().role == 'superadmin';
     }
 
     function isClinicAdmin() {
@@ -286,6 +283,27 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
       allow create: if isAuthenticated() && isValidCharge(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
       allow update: if isAuthenticated() && isValidCharge(request.resource.data) && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+    }
+
+    match /prescriptions/{id} {
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+    }
+
+    match /soap_notes/{id} {
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+    }
+
+    match /attachments/{id} {
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
       allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
     }
   }

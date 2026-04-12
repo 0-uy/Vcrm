@@ -8,6 +8,7 @@ import AppointmentsView from './components/AppointmentsView';
 import LogsView from './components/LogsView';
 import InventoryView from './components/InventoryView';
 import SuperAdminView from './components/SuperAdminView';
+import DailyBoard from './components/DailyBoard';
 import LoginView from './components/LoginView';
 import { Patient } from './types';
 import { Toaster } from './components/ui/sonner';
@@ -148,6 +149,17 @@ export default function App() {
             transition={{ duration: 0.2 }}
           >
             <InventoryView />
+          </motion.div>
+        );
+      case 'daily':
+        return (
+          <motion.div
+            key="daily"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <DailyBoard />
           </motion.div>
         );
       case 'superadmin':
