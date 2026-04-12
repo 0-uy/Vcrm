@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Clinic staff member",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "veterinarian"] },
+        "clinicId": { "type": "string" }
+      },
+      "required": ["uid", "email", "role", "clinicId"]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "A pet patient",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "species": { "type": "string" },
+        "race": { "type": "string" },
+        "age": { "type": "number" },
+        "weight": { "type": "number" },
+        "ownerName": { "type": "string" },
+        "ownerPhone": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "species", "ownerName", "clinicId"]
+    },
+    "ClinicalEvent": {
+      "title": "Clinical Event",
+      "description": "An entry in the clinical history",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["consultation", "vaccine", "treatment", "note"] },
+        "description": { "type": "string" },
+        "nextDate": { "type": "string", "format": "date-time", "description": "Used for vaccines" },
+        "clinicId": { "type": "string" }
+      },
+      "required": ["patientId", "date", "type", "description", "clinicId"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "A scheduled turn",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "attended", "cancelled"] },
+        "clinicId": { "type": "string" }
+      },
+      "required": ["patientId", "date", "reason", "status", "clinicId"]
+    },
+    "InternalLog": {
+      "title": "Internal Log",
+      "description": "Daily notes or incidents",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date-time" },
+        "content": { "type": "string" },
+        "patientId": { "type": "string" },
+        "clinicId": { "type": "string" }
+      },
+      "required": ["date", "content", "clinicId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    },
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Pet patient records"
+    },
+    "/patients/{patientId}/history/{eventId}": {
+      "schema": "ClinicalEvent",
+      "description": "Clinical history for a patient"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Scheduled appointments"
+    },
+    "/logs/{logId}": {
+      "schema": "InternalLog",
+      "description": "Internal clinic logs"
+    }
+  }
+}

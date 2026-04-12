@@ -1,0 +1,178 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId}
+// Fields:
+//   - uid: string (required)
+//   - email: string (required, email format)
+//   - displayName: string (optional)
+//   - role: string (required, enum: ['admin', 'veterinarian'])
+//   - clinicId: string (required)
+//
+// Collection: patients
+// Document ID: {patientId}
+// Fields:
+//   - name: string (required)
+//   - species: string (required)
+//   - race: string (optional)
+//   - age: number (optional)
+//   - weight: number (optional)
+//   - ownerName: string (required)
+//   - ownerPhone: string (optional)
+//   - clinicId: string (required)
+//   - createdAt: timestamp (required)
+//
+// Collection: patients/{patientId}/history
+// Document ID: {eventId}
+// Fields:
+//   - patientId: string (required)
+//   - date: timestamp (required)
+//   - type: string (required, enum: ['consultation', 'vaccine', 'treatment', 'note'])
+//   - description: string (required)
+//   - nextDate: timestamp (optional)
+//   - clinicId: string (required)
+//
+// Collection: appointments
+// Document ID: {appointmentId}
+// Fields:
+//   - patientId: string (required)
+//   - patientName: string (required)
+//   - date: timestamp (required)
+//   - reason: string (required)
+//   - status: string (required, enum: ['pending', 'attended', 'cancelled'])
+//   - clinicId: string (required)
+//
+// Collection: logs
+// Document ID: {logId}
+// Fields:
+//   - date: timestamp (required)
+//   - content: string (required)
+//   - patientId: string (optional)
+//   - clinicId: string (required)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isClinicMember(clinicId) {
+      return isAuthenticated() && userExists() && getUserData().clinicId == clinicId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (userExists() && getUserData().role == 'admin') ||
+        (request.auth.token.email == "imcorreamauricio@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'veterinarian'] &&
+             data.clinicId is string;
+    }
+
+    function isValidPatient(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.species is string &&
+             data.ownerName is string &&
+             data.clinicId is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidClinicalEvent(data) {
+      return data.patientId is string &&
+             data.date is timestamp &&
+             data.type in ['consultation', 'vaccine', 'treatment', 'note'] &&
+             data.description is string && data.description.size() < 5000 &&
+             data.clinicId is string;
+    }
+
+    function isValidAppointment(data) {
+      return data.patientId is string &&
+             data.patientName is string &&
+             data.date is timestamp &&
+             data.reason is string &&
+             data.status in ['pending', 'attended', 'cancelled'] &&
+             data.clinicId is string;
+    }
+
+    function isValidLog(data) {
+      return data.date is timestamp &&
+             data.content is string && data.content.size() < 5000 &&
+             data.clinicId is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || getUserData().clinicId == resource.data.clinicId);
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (request.auth.uid == userId || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (request.auth.uid == userId || isAdmin()) &&
+                    request.resource.data.clinicId == resource.data.clinicId; // Cannot change clinic
+    }
+
+    match /patients/{patientId} {
+      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
+      allow create: if isAuthenticated() && isValidPatient(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidPatient(request.resource.data) && isClinicMember(resource.data.clinicId) &&
+                    request.resource.data.clinicId == resource.data.clinicId;
+      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+
+      match /history/{eventId} {
+        allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
+        allow create: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+        allow update: if isAuthenticated() && isValidClinicalEvent(request.resource.data) && isClinicMember(resource.data.clinicId);
+        allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+      }
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
+      allow create: if isAuthenticated() && isValidAppointment(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidAppointment(request.resource.data) && isClinicMember(resource.data.clinicId);
+      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+    }
+
+    match /logs/{logId} {
+      allow read: if isAuthenticated() && isClinicMember(resource.data.clinicId);
+      allow create: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && isValidLog(request.resource.data) && isClinicMember(resource.data.clinicId);
+      allow delete: if isAdmin() && isClinicMember(resource.data.clinicId);
+    }
+  }
+}

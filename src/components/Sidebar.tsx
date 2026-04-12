@@ -1,0 +1,134 @@
+import React from 'react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Calendar, 
+  ClipboardList, 
+  Settings, 
+  LogOut, 
+  Menu, 
+  X,
+  Search,
+  Plus,
+  Bell,
+  Sun,
+  Moon
+} from 'lucide-react';
+import { useAuth } from './AuthProvider';
+import { auth } from '../firebase';
+import { Button } from './ui/button';
+import { ScrollArea } from './ui/scroll-area';
+import { Separator } from './ui/separator';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
+import { useTheme } from 'next-themes';
+
+interface SidebarProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+  const { profile } = useAuth();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const { theme, setTheme } = useTheme();
+
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'patients', label: 'Pacientes', icon: Users },
+    { id: 'appointments', label: 'Agenda', icon: Calendar },
+    { id: 'logs', label: 'Bitácora', icon: ClipboardList },
+  ];
+
+  const handleLogout = () => auth.signOut();
+
+  return (
+    <>
+      {/* Mobile Toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-4 left-4 z-50 md:hidden"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X /> : <Menu />}
+      </Button>
+
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-40 w-64 bg-card border-r transition-transform duration-300 ease-in-out md:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="flex flex-col h-full">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
+                  V
+                </div>
+                <h1 className="text-xl font-bold tracking-tight">VetCare</h1>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            </div>
+
+            <nav className="space-y-1">
+              {menuItems.map((item) => (
+                <Button
+                  key={item.id}
+                  variant={activeTab === item.id ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-3",
+                    activeTab === item.id && "bg-secondary font-medium"
+                  )}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsOpen(false);
+                  }}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
+              ))}
+            </nav>
+          </div>
+
+          <div className="mt-auto p-6 space-y-4">
+            <Separator />
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                {profile?.displayName?.charAt(0) || profile?.email.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{profile?.displayName || 'Usuario'}</p>
+                <p className="text-xs text-muted-foreground truncate capitalize">{profile?.role}</p>
+              </div>
+            </div>
+            <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+              Cerrar Sesión
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </>
+  );
+};
+
+export default Sidebar;
