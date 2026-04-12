@@ -23,7 +23,10 @@ import {
   Paperclip,
   FileUp,
   ExternalLink,
-  Download
+  Download,
+  Users,
+  Phone,
+  Dog
 } from 'lucide-react';
 import { 
   collection, 
@@ -435,47 +438,69 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
   const totalPending = charges.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="w-4 h-4" />
+    <div className="space-y-8 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center gap-6">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={onBack}
+          className="rounded-xl hover:bg-primary/5 hover:text-primary transition-all"
+        >
+          <ArrowLeft className="w-5 h-5" />
         </Button>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{patient.name}</h2>
-          <p className="text-muted-foreground">Dueño: {patient.ownerName} • {patient.ownerPhone}</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-1">
+            <h2 className="text-4xl font-black tracking-tight">{patient.name}</h2>
+            <Badge variant="secondary" className="rounded-lg bg-primary/5 text-primary border-none font-bold">
+              {patient.species}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground font-medium flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Dueño: <span className="text-foreground font-bold">{patient.ownerName}</span> 
+            {patient.ownerPhone && (
+              <>
+                <span className="text-muted-foreground/30">•</span>
+                <span className="flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5" /> {patient.ownerPhone}
+                </span>
+              </>
+            )}
+          </p>
         </div>
         
-        <div className="ml-auto flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Dialog open={isEditPatientOpen} onOpenChange={setIsEditPatientOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Edit2 className="w-4 h-4" /> Editar
+              <Button variant="outline" className="gap-2 rounded-xl border-primary/10 hover:bg-primary/5">
+                <Edit2 className="w-4 h-4" /> Editar Perfil
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[550px] glass border-none shadow-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Editar Paciente</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">Editar Paciente</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-name">Nombre Mascota *</Label>
+                    <Label htmlFor="edit-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre Mascota *</Label>
                     <Input 
                       id="edit-name" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editPatient.name || ''} 
                       onChange={e => setEditPatient({...editPatient, name: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-species">Especie *</Label>
+                    <Label htmlFor="edit-species" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Especie *</Label>
                     <Select 
                       value={editPatient.species} 
                       onValueChange={v => setEditPatient({...editPatient, species: v})}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         <SelectItem value="Perro">Perro</SelectItem>
                         <SelectItem value="Gato">Gato</SelectItem>
                         <SelectItem value="Ave">Ave</SelectItem>
@@ -485,108 +510,118 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-race">Raza</Label>
+                    <Label htmlFor="edit-race" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Raza</Label>
                     <Input 
                       id="edit-race" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editPatient.race || ''} 
                       onChange={e => setEditPatient({...editPatient, race: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-age">Edad (años)</Label>
+                    <Label htmlFor="edit-age" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Edad (años)</Label>
                     <Input 
                       id="edit-age" 
                       type="number" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editPatient.age || ''} 
                       onChange={e => setEditPatient({...editPatient, age: Number(e.target.value)})}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-weight">Peso (kg)</Label>
+                  <Label htmlFor="edit-weight" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Peso (kg)</Label>
                   <Input 
                     id="edit-weight" 
                     type="number" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={editPatient.weight || ''} 
                     onChange={e => setEditPatient({...editPatient, weight: Number(e.target.value)})}
                   />
                 </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ownerName">Nombre del Dueño *</Label>
-                  <Input 
-                    id="edit-ownerName" 
-                    value={editPatient.ownerName || ''} 
-                    onChange={e => setEditPatient({...editPatient, ownerName: e.target.value})}
-                  />
+                <Separator className="bg-primary/5" />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-ownerName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Dueño *</Label>
+                    <Input 
+                      id="edit-ownerName" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                      value={editPatient.ownerName || ''} 
+                      onChange={e => setEditPatient({...editPatient, ownerName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-ownerPhone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Teléfono</Label>
+                    <Input 
+                      id="edit-ownerPhone" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                      value={editPatient.ownerPhone || ''} 
+                      onChange={e => setEditPatient({...editPatient, ownerPhone: e.target.value})}
+                    />
+                  </div>
                 </div>
+                <Separator className="bg-primary/5" />
                 <div className="space-y-2">
-                  <Label htmlFor="edit-ownerPhone">Teléfono</Label>
-                  <Input 
-                    id="edit-ownerPhone" 
-                    value={editPatient.ownerPhone || ''} 
-                    onChange={e => setEditPatient({...editPatient, ownerPhone: e.target.value})}
-                  />
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ownerAddress">Dirección</Label>
+                  <Label htmlFor="edit-ownerAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dirección</Label>
                   <Input 
                     id="edit-ownerAddress" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={editPatient.ownerAddress || ''} 
                     onChange={e => setEditPatient({...editPatient, ownerAddress: e.target.value})}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-ownerNeighborhood">Barrio / Localidad</Label>
+                    <Label htmlFor="edit-ownerNeighborhood" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Barrio / Localidad</Label>
                     <Input 
                       id="edit-ownerNeighborhood" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editPatient.ownerNeighborhood || ''} 
                       onChange={e => setEditPatient({...editPatient, ownerNeighborhood: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-addressNotes">Notas de Dirección</Label>
+                    <Label htmlFor="edit-addressNotes" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notas de Dirección</Label>
                     <Input 
                       id="edit-addressNotes" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editPatient.addressNotes || ''} 
                       onChange={e => setEditPatient({...editPatient, addressNotes: e.target.value})}
                     />
                   </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditPatientOpen(false)}>Cancelar</Button>
-                <Button onClick={handleUpdatePatient}>Guardar Cambios</Button>
+              <DialogFooter className="gap-2">
+                <Button variant="ghost" onClick={() => setIsEditPatientOpen(false)} className="rounded-xl">Cancelar</Button>
+                <Button onClick={handleUpdatePatient} className="rounded-xl px-8 shadow-lg shadow-primary/20">Guardar Cambios</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 rounded-xl shadow-lg shadow-primary/20 px-6">
                 <Plus className="w-4 h-4" /> Nuevo Evento
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] glass border-none shadow-2xl">
               <DialogHeader>
-                <DialogTitle>Agregar Evento Clínico</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">Agregar Evento Clínico</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="type">Tipo de Evento</Label>
+                    <Label htmlFor="type" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tipo de Evento</Label>
                     <Select 
                       value={newEvent.type} 
                       onValueChange={v => setNewEvent({...newEvent, type: v as ClinicalEventType})}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         <SelectItem value="consultation">Consulta</SelectItem>
                         <SelectItem value="vaccine">Vacuna</SelectItem>
                         <SelectItem value="treatment">Tratamiento</SelectItem>
@@ -595,10 +630,11 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="date">Fecha</Label>
+                    <Label htmlFor="date" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fecha</Label>
                     <Input 
                       id="date" 
                       type="date" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       defaultValue={format(new Date(), 'yyyy-MM-dd')}
                       onChange={e => setNewEvent({...newEvent, date: Timestamp.fromDate(new Date(e.target.value))})}
                     />
@@ -607,54 +643,55 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 
                 {newEvent.type === 'vaccine' && (
                   <div className="space-y-2">
-                    <Label htmlFor="nextDate">Próxima Dosis (Opcional)</Label>
+                    <Label htmlFor="nextDate" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Próxima Dosis (Opcional)</Label>
                     <Input 
                       id="nextDate" 
                       type="date" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       onChange={e => setNewEvent({...newEvent, nextDate: Timestamp.fromDate(new Date(e.target.value))})}
                     />
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descripción / Notas</Label>
+                  <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Descripción / Notas</Label>
                   <Textarea 
                     id="description" 
                     placeholder="Detalles de la consulta, vacuna aplicada, etc." 
-                    className="min-h-[100px]"
+                    className="min-h-[120px] rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={newEvent.description || ''}
                     onChange={e => setNewEvent({...newEvent, description: e.target.value})}
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddEventOpen(false)}>Cancelar</Button>
-                <Button onClick={handleAddEvent}>Guardar Evento</Button>
+              <DialogFooter className="gap-2">
+                <Button variant="ghost" onClick={() => setIsAddEventOpen(false)} className="rounded-xl">Cancelar</Button>
+                <Button onClick={handleAddEvent} className="rounded-xl px-8 shadow-lg shadow-primary/20">Guardar Evento</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Dialog open={isAddChargeOpen} onOpenChange={setIsAddChargeOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
+              <Button variant="outline" className="gap-2 rounded-xl border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/5">
                 <DollarSign className="w-4 h-4" /> Nuevo Cargo
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-[400px] glass border-none shadow-2xl">
               <DialogHeader>
-                <DialogTitle>Registrar Cargo</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">Registrar Cargo</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-6 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="concept">Concepto *</Label>
+                  <Label htmlFor="concept" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Concepto *</Label>
                   <Select 
                     value={newCharge.concept} 
                     onValueChange={v => setNewCharge({...newCharge, concept: v})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
                       <SelectValue placeholder="Seleccionar concepto" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="Consulta">Consulta</SelectItem>
                       <SelectItem value="Vacuna">Vacuna</SelectItem>
                       <SelectItem value="Tratamiento">Tratamiento</SelectItem>
@@ -665,34 +702,35 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Monto ($) *</Label>
+                  <Label htmlFor="amount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Monto ($) *</Label>
                   <Input 
                     id="amount" 
                     type="number" 
                     placeholder="0.00" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={newCharge.amount || ''} 
                     onChange={e => setNewCharge({...newCharge, amount: Number(e.target.value)})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="status">Estado</Label>
+                  <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Estado</Label>
                   <Select 
                     value={newCharge.status} 
                     onValueChange={v => setNewCharge({...newCharge, status: v as ChargeStatus})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
                       <SelectValue placeholder="Estado del pago" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="pending">Pendiente</SelectItem>
                       <SelectItem value="paid">Pagado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddChargeOpen(false)}>Cancelar</Button>
-                <Button onClick={handleAddCharge}>Registrar</Button>
+              <DialogFooter className="gap-2">
+                <Button variant="ghost" onClick={() => setIsAddChargeOpen(false)} className="rounded-xl">Cancelar</Button>
+                <Button onClick={handleAddCharge} className="rounded-xl px-8 shadow-lg shadow-primary/20">Registrar</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -883,71 +921,83 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Patient Info Card */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información General</CardTitle>
+          <Card className="glass-card border-none rounded-3xl overflow-hidden">
+            <CardHeader className="border-b border-primary/5 bg-primary/5">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <Dog className="w-5 h-5 text-primary" /> Información General
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Especie</p>
-                  <p className="font-medium">{patient.species}</p>
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Especie</p>
+                  <p className="font-bold text-lg">{patient.species}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Raza</p>
-                  <p className="font-medium">{patient.race || 'Sin raza'}</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Raza</p>
+                  <p className="font-bold text-lg">{patient.race || 'Sin raza'}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Edad</p>
-                  <p className="font-medium">{patient.age || 0} años</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Edad</p>
+                  <p className="font-bold text-lg">{patient.age || 0} años</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Peso</p>
-                  <p className="font-medium">{patient.weight || 0} kg</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Peso</p>
+                  <p className="font-bold text-lg">{patient.weight || 0} kg</p>
                 </div>
               </div>
-              <Separator />
-              <div className="space-y-3">
-                <p className="text-sm font-medium flex items-center gap-2">
+              
+              <Separator className="bg-primary/5" />
+              
+              <div className="space-y-4">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" /> Ubicación del Dueño
                 </p>
                 {patient.ownerAddress ? (
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{patient.ownerAddress}</p>
-                    {patient.ownerNeighborhood && (
-                      <p className="text-xs text-muted-foreground">{patient.ownerNeighborhood}</p>
-                    )}
+                  <div className="space-y-2">
+                    <div className="bg-primary/5 p-3 rounded-2xl border border-primary/10">
+                      <p className="text-sm font-bold">{patient.ownerAddress}</p>
+                      {patient.ownerNeighborhood && (
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">{patient.ownerNeighborhood}</p>
+                      )}
+                    </div>
                     {patient.addressNotes && (
-                      <div className="flex items-start gap-2 mt-1 p-2 bg-muted/50 rounded text-xs italic">
-                        <Home className="w-3 h-3 mt-0.5 shrink-0" />
+                      <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-2xl text-xs italic font-medium">
+                        <Home className="w-4 h-4 shrink-0 text-primary/50" />
                         <span>{patient.addressNotes}</span>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground italic">Sin dirección registrada</p>
+                  <div className="p-4 rounded-2xl border border-dashed text-center">
+                    <p className="text-xs text-muted-foreground italic font-medium">Sin dirección registrada</p>
+                  </div>
                 )}
               </div>
-              <Separator />
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Alertas de Vacunación</p>
+
+              <Separator className="bg-primary/5" />
+
+              <div className="space-y-4">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Alertas de Vacunación</p>
                 {overdueVaccines.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded-md border border-destructive/20">
-                    <AlertCircle className="w-3 h-3" />
+                  <div className="flex items-center gap-3 text-xs font-bold text-destructive bg-destructive/5 p-3 rounded-2xl border border-destructive/10">
+                    <AlertCircle className="w-4 h-4" />
                     <span>{overdueVaccines.length} vacunas vencidas</span>
                   </div>
                 )}
                 {nextVaccines.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-orange-500 bg-orange-500/10 p-2 rounded-md border border-orange-500/20">
-                    <Clock className="w-3 h-3" />
+                  <div className="flex items-center gap-3 text-xs font-bold text-orange-600 bg-orange-500/5 p-3 rounded-2xl border border-orange-500/10">
+                    <Clock className="w-4 h-4" />
                     <span>{nextVaccines.length} vacunas próximas</span>
                   </div>
                 )}
                 {overdueVaccines.length === 0 && nextVaccines.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No hay alertas pendientes.</p>
+                  <div className="p-4 rounded-2xl border border-dashed text-center">
+                    <p className="text-xs text-muted-foreground font-medium">No hay alertas pendientes.</p>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -956,54 +1006,56 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
 
         {/* Clinical History Timeline */}
         <div className="lg:col-span-2">
-          <Tabs defaultValue="history">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="history">Historial</TabsTrigger>
-              <TabsTrigger value="soap">SOAP</TabsTrigger>
-              <TabsTrigger value="prescriptions">Recetas</TabsTrigger>
-              <TabsTrigger value="vaccines">Vacunas</TabsTrigger>
-              <TabsTrigger value="attachments">Adjuntos</TabsTrigger>
-              <TabsTrigger value="billing">Facturas</TabsTrigger>
+          <Tabs defaultValue="history" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto p-1 bg-primary/5 rounded-2xl border border-primary/5">
+              <TabsTrigger value="history" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Historial</TabsTrigger>
+              <TabsTrigger value="soap" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">SOAP</TabsTrigger>
+              <TabsTrigger value="prescriptions" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Recetas</TabsTrigger>
+              <TabsTrigger value="vaccines" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Vacunas</TabsTrigger>
+              <TabsTrigger value="attachments" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Adjuntos</TabsTrigger>
+              <TabsTrigger value="billing" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Facturas</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="history" className="mt-6">
-              <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
+            <TabsContent value="history" className="mt-8">
+              <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-primary/20 before:to-transparent">
                 {history.length === 0 ? (
-                  <div className="text-center py-12 border rounded-lg border-dashed">
-                    <p className="text-muted-foreground">No hay eventos registrados.</p>
+                  <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
+                    <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <Calendar className="w-8 h-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-muted-foreground font-bold">No hay eventos registrados en el historial.</p>
                   </div>
                 ) : (
                   history.map((event, i) => (
-                    <div key={event.id} className="relative flex items-start gap-6 pl-12">
+                    <div key={event.id} className="relative flex items-start gap-8 pl-14 group">
                       <div className={cn(
-                        "absolute left-0 w-10 h-10 rounded-full border-4 border-background flex items-center justify-center z-10",
+                        "absolute left-0 w-10 h-10 rounded-2xl border-4 border-background flex items-center justify-center z-10 shadow-lg transition-transform group-hover:scale-110",
                         getEventColor(event.type)
                       )}>
                         {getEventIcon(event.type)}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold capitalize">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-black uppercase tracking-widest text-primary">
                               {event.type === 'consultation' ? 'Consulta' : 
                                event.type === 'vaccine' ? 'Vacuna' : 
                                event.type === 'treatment' ? 'Tratamiento' : 'Nota'}
                             </span>
-                            <span className="text-xs text-muted-foreground">•</span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-lg">
                               {format(event.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
                             </span>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </div>
-                        <Card>
-                          <CardContent className="p-4">
-                            <p className="text-sm whitespace-pre-wrap">{event.description}</p>
+                        <Card className="glass-card border-none rounded-2xl overflow-hidden">
+                          <CardContent className="p-5">
+                            <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground/80">{event.description}</p>
                             {event.nextDate && (
-                              <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs font-medium text-primary">
-                                <Calendar className="w-3 h-3" />
+                              <div className="mt-4 pt-4 border-t border-primary/5 flex items-center gap-3 text-xs font-black uppercase tracking-widest text-primary">
+                                <Calendar className="w-4 h-4" />
                                 Próxima cita: {format(event.nextDate.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
                               </div>
                             )}
@@ -1016,43 +1068,46 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               </div>
             </TabsContent>
 
-            <TabsContent value="soap" className="mt-6">
+            <TabsContent value="soap" className="mt-8">
               <div className="space-y-6">
                 {soapNotes.length === 0 ? (
-                  <div className="text-center py-12 border rounded-lg border-dashed">
-                    <p className="text-muted-foreground">No hay notas SOAP registradas.</p>
+                  <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
+                    <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <ClipboardType className="w-8 h-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-muted-foreground font-bold">No hay notas SOAP registradas.</p>
                   </div>
                 ) : (
                   soapNotes.map((note) => (
-                    <Card key={note.id}>
-                      <CardHeader className="pb-2">
+                    <Card key={note.id} className="glass-card border-none rounded-3xl overflow-hidden">
+                      <CardHeader className="pb-4 border-b border-primary/5 bg-primary/5">
                         <div className="flex justify-between items-center">
-                          <CardTitle className="text-sm font-bold flex items-center gap-2">
-                            <ClipboardType className="w-4 h-4 text-primary" />
+                          <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary">
+                            <ClipboardType className="w-4 h-4" />
                             Nota SOAP
                           </CardTitle>
-                          <Badge variant="secondary" className="text-[10px]">
+                          <Badge variant="secondary" className="rounded-lg font-bold bg-background shadow-sm border-none">
                             {format(note.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
                           </Badge>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4 text-sm">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="font-bold text-xs text-muted-foreground uppercase">Subjective (S)</p>
-                            <p className="bg-muted/30 p-2 rounded">{note.subjective || 'N/A'}</p>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Subjective (S)</p>
+                            <div className="bg-muted/30 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.subjective || 'N/A'}</div>
                           </div>
-                          <div className="space-y-1">
-                            <p className="font-bold text-xs text-muted-foreground uppercase">Objective (O)</p>
-                            <p className="bg-muted/30 p-2 rounded">{note.objective || 'N/A'}</p>
+                          <div className="space-y-2">
+                            <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Objective (O)</p>
+                            <div className="bg-muted/30 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.objective || 'N/A'}</div>
                           </div>
-                          <div className="space-y-1">
-                            <p className="font-bold text-xs text-muted-foreground uppercase">Assessment (A)</p>
-                            <p className="bg-primary/5 p-2 rounded font-medium border border-primary/10">{note.assessment}</p>
+                          <div className="space-y-2">
+                            <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Assessment (A)</p>
+                            <div className="bg-primary/5 p-4 rounded-2xl text-sm font-bold border border-primary/10 text-primary">{note.assessment}</div>
                           </div>
-                          <div className="space-y-1">
-                            <p className="font-bold text-xs text-muted-foreground uppercase">Plan (P)</p>
-                            <p className="bg-muted/30 p-2 rounded">{note.plan || 'N/A'}</p>
+                          <div className="space-y-2">
+                            <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Plan (P)</p>
+                            <div className="bg-muted/30 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.plan || 'N/A'}</div>
                           </div>
                         </div>
                       </CardContent>
@@ -1062,49 +1117,52 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               </div>
             </TabsContent>
 
-            <TabsContent value="prescriptions" className="mt-6">
+            <TabsContent value="prescriptions" className="mt-8">
               <div className="space-y-4">
                 {prescriptions.length === 0 ? (
-                  <div className="text-center py-12 border rounded-lg border-dashed">
-                    <p className="text-muted-foreground">No hay recetas registradas.</p>
+                  <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
+                    <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <Pill className="w-8 h-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-muted-foreground font-bold">No hay recetas registradas.</p>
                   </div>
                 ) : (
                   prescriptions.map((p) => (
-                    <Card key={p.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                              <Pill className="w-5 h-5" />
+                    <Card key={p.id} className="glass-card border-none rounded-3xl overflow-hidden group">
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+                              <Pill className="w-7 h-7" />
                             </div>
                             <div>
-                              <h4 className="font-bold">{p.medication}</h4>
-                              <p className="text-xs text-muted-foreground">
+                              <h4 className="text-lg font-black tracking-tight text-primary">{p.medication}</h4>
+                              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                                 {format(p.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
                               </p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm" className="gap-2">
-                            <Download className="w-3 h-3" /> PDF
+                          <Button variant="outline" size="sm" className="gap-2 rounded-xl border-primary/10 hover:bg-primary/5">
+                            <Download className="w-4 h-4" /> PDF
                           </Button>
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="bg-muted/50 p-2 rounded">
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Dosis</p>
-                            <p className="font-medium">{p.dose}</p>
+                          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Dosis</p>
+                            <p className="font-bold text-primary">{p.dose}</p>
                           </div>
-                          <div className="bg-muted/50 p-2 rounded">
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Frecuencia</p>
-                            <p className="font-medium">{p.frequency}</p>
+                          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Frecuencia</p>
+                            <p className="font-bold text-primary">{p.frequency}</p>
                           </div>
-                          <div className="bg-muted/50 p-2 rounded">
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Duración</p>
-                            <p className="font-medium">{p.duration}</p>
+                          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Duración</p>
+                            <p className="font-bold text-primary">{p.duration}</p>
                           </div>
                         </div>
                         {p.notes && (
-                          <div className="mt-3 p-2 bg-primary/5 rounded text-xs italic border border-primary/10">
-                            <p className="font-bold not-italic mb-1">Indicaciones:</p>
+                          <div className="mt-4 p-4 bg-muted/30 rounded-2xl text-xs font-medium border border-primary/5 italic">
+                            <p className="font-black not-italic mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Indicaciones Adicionales:</p>
                             {p.notes}
                           </div>
                         )}
@@ -1115,42 +1173,45 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               </div>
             </TabsContent>
 
-            <TabsContent value="attachments" className="mt-6">
-              <div className="grid gap-4 sm:grid-cols-2">
+            <TabsContent value="attachments" className="mt-8">
+              <div className="grid gap-6 sm:grid-cols-2">
                 {attachments.length === 0 ? (
-                  <div className="col-span-full text-center py-12 border rounded-lg border-dashed">
-                    <p className="text-muted-foreground">No hay adjuntos registrados.</p>
+                  <div className="col-span-full text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
+                    <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <Paperclip className="w-8 h-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-muted-foreground font-bold">No hay adjuntos registrados.</p>
                   </div>
                 ) : (
                   attachments.map((att) => (
-                    <Card key={att.id} className="overflow-hidden group">
+                    <Card key={att.id} className="glass-card border-none rounded-3xl overflow-hidden group hover:shadow-xl transition-all">
                       <CardContent className="p-0">
-                        <div className="flex items-center p-4 gap-4">
+                        <div className="flex items-center p-5 gap-4">
                           <div className={cn(
-                            "w-12 h-12 rounded-lg flex items-center justify-center shrink-0",
+                            "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
                             att.type === 'image' ? "bg-blue-500/10 text-blue-500" : 
                             att.type === 'pdf' ? "bg-red-500/10 text-red-500" : "bg-muted text-muted-foreground"
                           )}>
-                            {att.type === 'image' ? <FileUp className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                            {att.type === 'image' ? <FileUp className="w-7 h-7" /> : <FileText className="w-7 h-7" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm truncate">{att.name}</p>
-                            <p className="text-[10px] text-muted-foreground uppercase">
+                            <p className="font-black text-sm truncate tracking-tight">{att.name}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
                               {att.type} • {format(att.date.toDate(), 'dd/MM/yyyy')}
                             </p>
                           </div>
-                          <Button variant="ghost" size="icon" asChild>
+                          <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/5" asChild>
                             <a href={att.url} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="w-4 h-4" />
                             </a>
                           </Button>
                         </div>
                         {att.type === 'image' && (
-                          <div className="h-32 bg-muted relative overflow-hidden border-t">
+                          <div className="h-40 bg-muted relative overflow-hidden border-t border-primary/5">
                             <img 
                               src={att.url} 
                               alt={att.name} 
-                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                              className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                               referrerPolicy="no-referrer"
                             />
                           </div>
@@ -1162,31 +1223,40 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               </div>
             </TabsContent>
 
-            <TabsContent value="vaccines" className="mt-6">
+            <TabsContent value="vaccines" className="mt-8">
               <div className="grid gap-4">
                 {vaccines.length === 0 ? (
-                  <div className="text-center py-12 border rounded-lg border-dashed">
-                    <p className="text-muted-foreground">No hay vacunas registradas.</p>
+                  <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
+                    <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <Syringe className="w-8 h-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-muted-foreground font-bold">No hay vacunas registradas.</p>
                   </div>
                 ) : (
                   vaccines.map((v) => (
-                    <Card key={v.id}>
-                      <CardContent className="p-4 flex items-center justify-between">
+                    <Card key={v.id} className="glass-card border-none rounded-2xl overflow-hidden">
+                      <CardContent className="p-5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center">
-                            <Syringe className="w-5 h-5" />
+                          <div className="w-12 h-12 rounded-2xl bg-green-500/10 text-green-600 flex items-center justify-center shadow-inner">
+                            <Syringe className="w-6 h-6" />
                           </div>
                           <div>
-                            <p className="font-bold">{v.description}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="font-black tracking-tight text-foreground">{v.description}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
                               Aplicada el {format(v.date.toDate(), 'dd/MM/yyyy')}
                             </p>
                           </div>
                         </div>
                         {v.nextDate && (
                           <div className="text-right">
-                            <p className="text-xs text-muted-foreground mb-1">Próxima dosis</p>
-                            <Badge variant={isBefore(v.nextDate.toDate(), new Date()) ? 'destructive' : 'outline'}>
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Próxima dosis</p>
+                            <Badge 
+                              variant={isBefore(v.nextDate.toDate(), new Date()) ? 'destructive' : 'outline'}
+                              className={cn(
+                                "rounded-lg font-bold px-3 py-1",
+                                !isBefore(v.nextDate.toDate(), new Date()) && "bg-primary/5 text-primary border-primary/10"
+                              )}
+                            >
                               {format(v.nextDate.toDate(), 'dd/MM/yyyy')}
                             </Badge>
                           </div>
@@ -1198,28 +1268,28 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               </div>
             </TabsContent>
 
-            <TabsContent value="billing" className="mt-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <Card className="bg-green-500/5 border-green-500/20">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center">
-                        <CreditCard className="w-5 h-5" />
+            <TabsContent value="billing" className="mt-8">
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 gap-6">
+                  <Card className="glass-card border-none rounded-3xl overflow-hidden bg-emerald-500/5 border-emerald-500/10">
+                    <CardContent className="p-6 flex items-center gap-5">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-inner">
+                        <CreditCard className="w-7 h-7" />
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Total Pagado</p>
-                        <p className="text-xl font-bold text-green-600">${totalPaid.toFixed(2)}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/70 mb-1">Total Pagado</p>
+                        <p className="text-3xl font-black text-emerald-600">${totalPaid.toFixed(2)}</p>
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-orange-500/5 border-orange-500/20">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center">
-                        <Receipt className="w-5 h-5" />
+                  <Card className="glass-card border-none rounded-3xl overflow-hidden bg-orange-500/5 border-orange-500/10">
+                    <CardContent className="p-6 flex items-center gap-5">
+                      <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-600 flex items-center justify-center shadow-inner">
+                        <Receipt className="w-7 h-7" />
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Total Pendiente</p>
-                        <p className="text-xl font-bold text-orange-600">${totalPending.toFixed(2)}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-orange-600/70 mb-1">Total Pendiente</p>
+                        <p className="text-3xl font-black text-orange-600">${totalPending.toFixed(2)}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -1227,34 +1297,37 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
 
                 <div className="space-y-4">
                   {charges.length === 0 ? (
-                    <div className="text-center py-12 border rounded-lg border-dashed">
-                      <p className="text-muted-foreground">No hay cargos registrados.</p>
+                    <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
+                      <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                        <DollarSign className="w-8 h-8 text-muted-foreground/50" />
+                      </div>
+                      <p className="text-muted-foreground font-bold">No hay cargos registrados.</p>
                     </div>
                   ) : (
                     charges.map((charge) => (
-                      <Card key={charge.id} className="overflow-hidden">
-                        <CardContent className="p-4 flex items-center justify-between">
+                      <Card key={charge.id} className="glass-card border-none rounded-2xl overflow-hidden group hover:shadow-md transition-all">
+                        <CardContent className="p-5 flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className={cn(
-                              "w-10 h-10 rounded-full flex items-center justify-center",
-                              charge.status === 'paid' ? "bg-green-500/10 text-green-500" : "bg-orange-500/10 text-orange-500"
+                              "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner",
+                              charge.status === 'paid' ? "bg-emerald-500/10 text-emerald-600" : "bg-orange-500/10 text-orange-600"
                             )}>
-                              <DollarSign className="w-5 h-5" />
+                              <DollarSign className="w-6 h-6" />
                             </div>
                             <div>
-                              <p className="font-bold">{charge.concept}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="font-black tracking-tight text-foreground">{charge.concept}</p>
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
                                 {format(charge.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-6">
-                            <p className="font-bold text-lg">${charge.amount.toFixed(2)}</p>
+                          <div className="flex items-center gap-8">
+                            <p className="font-black text-2xl tracking-tighter">${charge.amount.toFixed(2)}</p>
                             <Badge 
                               variant={charge.status === 'paid' ? 'default' : 'outline'}
                               className={cn(
-                                "cursor-pointer transition-all hover:scale-105",
-                                charge.status === 'paid' ? "bg-green-500 hover:bg-green-600" : "text-orange-500 border-orange-500 hover:bg-orange-50"
+                                "cursor-pointer transition-all hover:scale-105 rounded-xl px-4 py-1.5 font-bold text-xs uppercase tracking-widest",
+                                charge.status === 'paid' ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20" : "text-orange-600 border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10"
                               )}
                               onClick={() => toggleChargeStatus(charge)}
                             >

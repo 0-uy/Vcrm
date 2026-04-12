@@ -55,32 +55,44 @@
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
+    --primary: oklch(0.511 0.262 276.966);
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
+    --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
+    --muted: oklch(0.967 0.001 286.375);
+    --muted-foreground: oklch(0.552 0.016 285.938);
+    --accent: oklch(0.967 0.001 286.375);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
+    --ring: oklch(0.511 0.262 276.966);
+    --chart-1: oklch(0.511 0.262 276.966);
+    --chart-2: oklch(0.627 0.265 303.891);
+    --chart-3: oklch(0.646 0.222 41.116);
+    --chart-4: oklch(0.66 0.186 178.383);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --radius: 0.75rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary: oklch(0.511 0.262 276.966);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-accent: oklch(0.967 0.001 286.375);
+    --sidebar-accent-foreground: oklch(0.511 0.262 276.966);
     --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar-ring: oklch(0.511 0.262 276.966);
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+  }
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-sm;
+  }
+  .glass-card {
+    @apply bg-white/50 backdrop-blur-sm border border-white/30 shadow-sm hover:shadow-md transition-all duration-300;
+  }
 }
 
 .dark {

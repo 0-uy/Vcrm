@@ -164,44 +164,47 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Pacientes</h2>
-          <p className="text-muted-foreground">Gestiona la base de datos de mascotas y sus dueños.</p>
+        <div className="space-y-1">
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Pacientes
+          </h2>
+          <p className="text-muted-foreground font-medium">Gestiona la base de datos de mascotas y sus dueños.</p>
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 shadow-lg shadow-primary/20 rounded-xl px-6">
               <Plus className="w-4 h-4" /> Nuevo Paciente
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[550px] glass border-none shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Agregar Nuevo Paciente</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Agregar Nuevo Paciente</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-6 py-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nombre Mascota *</Label>
+                  <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre Mascota *</Label>
                   <Input 
                     id="name" 
                     placeholder="Ej: Max" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={newPatient.name || ''} 
                     onChange={e => setNewPatient({...newPatient, name: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="species">Especie *</Label>
+                  <Label htmlFor="species" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Especie *</Label>
                   <Select 
                     value={newPatient.species} 
                     onValueChange={v => setNewPatient({...newPatient, species: v})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="Perro">Perro</SelectItem>
                       <SelectItem value="Gato">Gato</SelectItem>
                       <SelectItem value="Ave">Ave</SelectItem>
@@ -211,110 +214,120 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="race">Raza</Label>
+                  <Label htmlFor="race" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Raza</Label>
                   <Input 
                     id="race" 
                     placeholder="Ej: Golden Retriever" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={newPatient.race || ''} 
                     onChange={e => setNewPatient({...newPatient, race: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="age">Edad (años)</Label>
+                  <Label htmlFor="age" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Edad (años)</Label>
                   <Input 
                     id="age" 
                     type="number" 
                     placeholder="0" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={newPatient.age || ''} 
                     onChange={e => setNewPatient({...newPatient, age: Number(e.target.value)})}
                   />
                 </div>
               </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label htmlFor="ownerName">Nombre del Dueño *</Label>
-                <Input 
-                  id="ownerName" 
-                  placeholder="Ej: Juan Pérez" 
-                  value={newPatient.ownerName || ''} 
-                  onChange={e => setNewPatient({...newPatient, ownerName: e.target.value})}
-                />
+              <Separator className="bg-primary/5" />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="ownerName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Dueño *</Label>
+                  <Input 
+                    id="ownerName" 
+                    placeholder="Ej: Juan Pérez" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                    value={newPatient.ownerName || ''} 
+                    onChange={e => setNewPatient({...newPatient, ownerName: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ownerPhone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Teléfono del Dueño</Label>
+                  <Input 
+                    id="ownerPhone" 
+                    placeholder="Ej: +54 9 11..." 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                    value={newPatient.ownerPhone || ''} 
+                    onChange={e => setNewPatient({...newPatient, ownerPhone: e.target.value})}
+                  />
+                </div>
               </div>
+              <Separator className="bg-primary/5" />
               <div className="space-y-2">
-                <Label htmlFor="ownerPhone">Teléfono del Dueño</Label>
-                <Input 
-                  id="ownerPhone" 
-                  placeholder="Ej: +54 9 11..." 
-                  value={newPatient.ownerPhone || ''} 
-                  onChange={e => setNewPatient({...newPatient, ownerPhone: e.target.value})}
-                />
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label htmlFor="ownerAddress">Dirección</Label>
+                <Label htmlFor="ownerAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dirección</Label>
                 <Input 
                   id="ownerAddress" 
                   placeholder="Ej: Av. Siempre Viva 742" 
+                  className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                   value={newPatient.ownerAddress || ''} 
                   onChange={e => setNewPatient({...newPatient, ownerAddress: e.target.value})}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="ownerNeighborhood">Barrio / Localidad</Label>
+                  <Label htmlFor="ownerNeighborhood" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Barrio / Localidad</Label>
                   <Input 
                     id="ownerNeighborhood" 
                     placeholder="Ej: Springfield" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={newPatient.ownerNeighborhood || ''} 
                     onChange={e => setNewPatient({...newPatient, ownerNeighborhood: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="addressNotes">Notas de Dirección</Label>
+                  <Label htmlFor="addressNotes" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notas de Dirección</Label>
                   <Input 
                     id="addressNotes" 
                     placeholder="Ej: Casa de rejas blancas" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={newPatient.addressNotes || ''} 
                     onChange={e => setNewPatient({...newPatient, addressNotes: e.target.value})}
                   />
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleAddPatient}>Guardar Paciente</Button>
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl">Cancelar</Button>
+              <Button onClick={handleAddPatient} className="rounded-xl px-8 shadow-lg shadow-primary/20">Guardar Paciente</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[550px] glass border-none shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Editar Paciente</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Editar Paciente</DialogTitle>
             </DialogHeader>
             {editingPatient && (
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-name">Nombre Mascota *</Label>
+                    <Label htmlFor="edit-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre Mascota *</Label>
                     <Input 
                       id="edit-name" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editingPatient.name || ''} 
                       onChange={e => setEditingPatient({...editingPatient, name: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-species">Especie *</Label>
+                    <Label htmlFor="edit-species" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Especie *</Label>
                     <Select 
                       value={editingPatient.species} 
                       onValueChange={v => setEditingPatient({...editingPatient, species: v})}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         <SelectItem value="Perro">Perro</SelectItem>
                         <SelectItem value="Gato">Gato</SelectItem>
                         <SelectItem value="Ave">Ave</SelectItem>
@@ -324,64 +337,73 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-race">Raza</Label>
+                    <Label htmlFor="edit-race" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Raza</Label>
                     <Input 
                       id="edit-race" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editingPatient.race || ''} 
                       onChange={e => setEditingPatient({...editingPatient, race: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-age">Edad (años)</Label>
+                    <Label htmlFor="edit-age" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Edad (años)</Label>
                     <Input 
                       id="edit-age" 
                       type="number" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editingPatient.age || ''} 
                       onChange={e => setEditingPatient({...editingPatient, age: Number(e.target.value)})}
                     />
                   </div>
                 </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ownerName">Nombre del Dueño *</Label>
-                  <Input 
-                    id="edit-ownerName" 
-                    value={editingPatient.ownerName || ''} 
-                    onChange={e => setEditingPatient({...editingPatient, ownerName: e.target.value})}
-                  />
+                <Separator className="bg-primary/5" />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-ownerName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Dueño *</Label>
+                    <Input 
+                      id="edit-ownerName" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                      value={editingPatient.ownerName || ''} 
+                      onChange={e => setEditingPatient({...editingPatient, ownerName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-ownerPhone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Teléfono del Dueño</Label>
+                    <Input 
+                      id="edit-ownerPhone" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                      value={editingPatient.ownerPhone || ''} 
+                      onChange={e => setEditingPatient({...editingPatient, ownerPhone: e.target.value})}
+                    />
+                  </div>
                 </div>
+                <Separator className="bg-primary/5" />
                 <div className="space-y-2">
-                  <Label htmlFor="edit-ownerPhone">Teléfono del Dueño</Label>
-                  <Input 
-                    id="edit-ownerPhone" 
-                    value={editingPatient.ownerPhone || ''} 
-                    onChange={e => setEditingPatient({...editingPatient, ownerPhone: e.target.value})}
-                  />
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ownerAddress">Dirección</Label>
+                  <Label htmlFor="edit-ownerAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dirección</Label>
                   <Input 
                     id="edit-ownerAddress" 
+                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                     value={editingPatient.ownerAddress || ''} 
                     onChange={e => setEditingPatient({...editingPatient, ownerAddress: e.target.value})}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-ownerNeighborhood">Barrio / Localidad</Label>
+                    <Label htmlFor="edit-ownerNeighborhood" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Barrio / Localidad</Label>
                     <Input 
                       id="edit-ownerNeighborhood" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editingPatient.ownerNeighborhood || ''} 
                       onChange={e => setEditingPatient({...editingPatient, ownerNeighborhood: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-addressNotes">Notas de Dirección</Label>
+                    <Label htmlFor="edit-addressNotes" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notas de Dirección</Label>
                     <Input 
                       id="edit-addressNotes" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
                       value={editingPatient.addressNotes || ''} 
                       onChange={e => setEditingPatient({...editingPatient, addressNotes: e.target.value})}
                     />
@@ -389,61 +411,64 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                 </div>
               </div>
             )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={() => {
                 setIsEditDialogOpen(false);
                 setEditingPatient(null);
-              }}>Cancelar</Button>
-              <Button onClick={handleEditPatient}>Guardar Cambios</Button>
+              }} className="rounded-xl">Cancelar</Button>
+              <Button onClick={handleEditPatient} className="rounded-xl px-8 shadow-lg shadow-primary/20">Guardar Cambios</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Search and Filters */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative group max-w-2xl">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
           placeholder="Buscar por nombre de mascota o dueño..." 
-          className="pl-10"
+          className="pl-12 h-14 text-lg rounded-2xl glass border-none shadow-sm focus:shadow-md transition-all"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
       </div>
 
       {/* Patient List */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredPatients.length === 0 ? (
-          <div className="col-span-full py-12 text-center border rounded-lg border-dashed">
-            <p className="text-muted-foreground">No se encontraron pacientes.</p>
+          <div className="col-span-full py-24 text-center glass-card border-dashed rounded-3xl">
+            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-20">
+              <Users className="w-10 h-10" />
+            </div>
+            <p className="text-muted-foreground font-medium text-lg">No se encontraron pacientes.</p>
           </div>
         ) : (
           filteredPatients.map((patient) => (
             <Card 
               key={patient.id} 
-              className="group hover:border-primary/50 transition-colors cursor-pointer overflow-hidden"
+              className="glass-card border-none rounded-3xl overflow-hidden group cursor-pointer"
               onClick={() => onSelectPatient(patient)}
             >
               <CardContent className="p-0">
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner group-hover:scale-110 transition-transform duration-300">
                         {getSpeciesIcon(patient.species)}
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg leading-tight">{patient.name}</h3>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                        <h3 className="font-black text-xl leading-tight group-hover:text-primary transition-colors">{patient.name}</h3>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mt-1">
                           {patient.species} • {patient.race || 'Sin raza'}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <div className="flex gap-1">
+                      <div className="flex gap-2">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingPatient(patient);
@@ -452,36 +477,42 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
-                        <Badge variant="secondary" className="font-normal">
+                        <Badge variant="secondary" className="font-bold rounded-lg px-2 py-0.5 bg-primary/5 text-primary border-none">
                           {patient.age || 0} años
                         </Badge>
                       </div>
                       {patient.nextVaccineDate && isBefore(patient.nextVaccineDate.toDate(), new Date()) && (
-                        <Badge variant="destructive" className="text-[10px] h-5 gap-1">
-                          <AlertCircle className="w-3 h-3" /> Vacuna Vencida
+                        <Badge variant="destructive" className="text-[10px] font-black uppercase h-6 gap-1.5 px-3 rounded-full shadow-sm shadow-destructive/20">
+                          <AlertCircle className="w-3.5 h-3.5" /> Vacuna Vencida
                         </Badge>
                       )}
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>{patient.ownerName}</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground bg-muted/30 p-2 rounded-xl border border-transparent group-hover:border-primary/5 transition-all">
+                      <div className="w-7 h-7 rounded-lg bg-background flex items-center justify-center shadow-sm">
+                        <Users className="w-3.5 h-3.5 text-primary/70" />
+                      </div>
+                      <span className="truncate">{patient.ownerName}</span>
                     </div>
                     {patient.ownerPhone && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground bg-muted/30 p-2 rounded-xl border border-transparent group-hover:border-primary/5 transition-all">
+                        <div className="w-7 h-7 rounded-lg bg-background flex items-center justify-center shadow-sm">
+                          <Phone className="w-3.5 h-3.5 text-primary/70" />
+                        </div>
                         <span>{patient.ownerPhone}</span>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="bg-muted/30 px-5 py-3 flex items-center justify-between group-hover:bg-primary/5 transition-colors">
-                  <span className="text-xs text-muted-foreground">
-                    Agregado el {format(patient.createdAt.toDate(), 'dd MMM yyyy', { locale: es })}
+                <div className="bg-primary/5 px-6 py-4 flex items-center justify-between group-hover:bg-primary/10 transition-colors border-t border-primary/5">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Registrado: {format(patient.createdAt.toDate(), 'dd MMM yyyy', { locale: es })}
                   </span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center shadow-sm group-hover:translate-x-1 transition-transform">
+                    <ChevronRight className="w-4 h-4 text-primary" />
+                  </div>
                 </div>
               </CardContent>
             </Card>

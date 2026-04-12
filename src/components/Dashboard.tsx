@@ -9,7 +9,9 @@ import {
   XCircle,
   Package,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  Stethoscope,
+  Syringe
 } from 'lucide-react';
 import { 
   collection, 
@@ -130,103 +132,109 @@ const Dashboard: React.FC = () => {
     .reduce((sum, c) => sum + c.amount, 0);
 
   const stats = [
-    { label: 'Total Pacientes', value: patients.length, icon: Users, color: 'text-blue-500' },
-    { label: 'Turnos Hoy', value: appointments.filter(a => a.status === 'pending').length, icon: Calendar, color: 'text-green-500' },
-    { label: 'Ingresos Mes', value: `$${monthlyIncome.toFixed(0)}`, icon: TrendingUp, color: 'text-emerald-500' },
-    { label: 'Pendiente Cobro', value: `$${totalPending.toFixed(0)}`, icon: AlertTriangle, color: 'text-orange-500' },
-  ];
-
-  // Mock data for the chart
-  const chartData = [
-    { name: 'Lun', visitas: 4 },
-    { name: 'Mar', visitas: 7 },
-    { name: 'Mie', visitas: 5 },
-    { name: 'Jue', visitas: 8 },
-    { name: 'Vie', visitas: 12 },
-    { name: 'Sab', visitas: 9 },
-    { name: 'Dom', visitas: 2 },
+    { label: 'Total Pacientes', value: patients.length, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Turnos Hoy', value: appointments.filter(a => a.status === 'pending').length, icon: Calendar, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+    { label: 'Ingresos Mes', value: `$${monthlyIncome.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Pendiente Cobro', value: `$${totalPending.toLocaleString()}`, icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Bienvenido, {profile?.displayName || 'Doctor'}</h2>
-          <p className="text-muted-foreground">Resumen de actividad para {profile?.clinicName || 'tu clínica'}.</p>
+        <div className="space-y-1">
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Hola, {profile?.displayName?.split(' ')[0] || 'Doctor'}
+          </h2>
+          <p className="text-muted-foreground font-medium">
+            Resumen operativo para <span className="text-foreground font-bold">{profile?.clinicName || 'tu clínica'}</span>.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1">
-            Clinic ID: {profile?.clinicId}
-          </Badge>
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Estado de Cuenta</span>
+            <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 px-3">
+              Suscripción Activa
+            </Badge>
+          </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={i} className={cn(stat.value > 0 && stat.label !== 'Total Pacientes' && "border-primary/20 bg-primary/5")}>
+          <Card key={i} className="glass-card border-none overflow-hidden relative group">
+            <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform duration-500 group-hover:scale-110", stat.bg)} />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-              <stat.icon className={cn("h-4 w-4", stat.color)} />
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{stat.label}</CardTitle>
+              <div className={cn("p-2 rounded-lg", stat.bg)}>
+                <stat.icon className={cn("h-4 w-4", stat.color)} />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {stat.label === 'Total Pacientes' ? 'Crecimiento constante' : 
-                 stat.value > 0 ? 'Requiere atención' : 'Todo al día'}
+              <div className="text-3xl font-black tracking-tight">{stat.value}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">
+                {stat.label === 'Total Pacientes' ? 'Base de datos activa' : 
+                 stat.value !== '$0' && stat.value !== 0 ? 'Actualizado hace un momento' : 'Sin actividad reciente'}
               </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         {/* Activity Feed */}
-        <Card className="col-span-4">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="col-span-4 glass-card border-none">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-primary/5 pb-4">
             <div>
-              <CardTitle>Actividad Reciente</CardTitle>
-              <CardDescription>Últimos eventos registrados en la clínica.</CardDescription>
+              <CardTitle className="text-xl font-bold">Actividad Reciente</CardTitle>
+              <CardDescription>Eventos clínicos y administrativos en tiempo real.</CardDescription>
             </div>
-            <Activity className="w-4 h-4 text-muted-foreground" />
+            <div className="p-2 bg-primary/5 rounded-full">
+              <Activity className="w-5 h-5 text-primary" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-6">
+          <CardContent className="pt-6">
+            <ScrollArea className="h-[450px] pr-4">
+              <div className="space-y-8">
                 {activities.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center opacity-20">
-                    <Activity className="w-12 h-12 mb-4" />
-                    <p>No hay actividad registrada aún.</p>
+                  <div className="flex flex-col items-center justify-center py-24 text-center opacity-30">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <Activity className="w-8 h-8" />
+                    </div>
+                    <p className="font-medium">No hay actividad registrada aún.</p>
                   </div>
                 ) : (
                   activities.map((activity, i) => (
-                    <div key={activity.id} className="flex gap-4 relative pb-6 last:pb-0">
+                    <div key={activity.id} className="flex gap-4 relative">
                       {i !== activities.length - 1 && (
-                        <div className="absolute left-4 top-8 bottom-0 w-px bg-border" />
+                        <div className="absolute left-4 top-8 bottom-0 w-px bg-gradient-to-b from-primary/20 to-transparent" />
                       )}
                       <div className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10",
-                        activity.type === 'consultation' ? "bg-blue-500/10 text-blue-500" :
-                        activity.type === 'vaccine' ? "bg-green-500/10 text-green-500" :
-                        activity.type === 'appointment' ? "bg-purple-500/10 text-purple-500" :
-                        "bg-orange-500/10 text-orange-500"
+                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 shadow-sm",
+                        activity.type === 'consultation' ? "bg-blue-500 text-white" :
+                        activity.type === 'vaccine' ? "bg-emerald-500 text-white" :
+                        activity.type === 'appointment' ? "bg-indigo-500 text-white" :
+                        "bg-orange-500 text-white"
                       )}>
-                        {activity.type === 'consultation' ? <Clock className="w-4 h-4" /> :
-                         activity.type === 'vaccine' ? <AlertCircle className="w-4 h-4" /> :
+                        {activity.type === 'consultation' ? <Stethoscope className="w-4 h-4" /> :
+                         activity.type === 'vaccine' ? <Syringe className="w-4 h-4" /> :
                          activity.type === 'appointment' ? <Calendar className="w-4 h-4" /> :
                          activity.type === 'billing' ? <TrendingUp className="w-4 h-4" /> :
                          <Package className="w-4 h-4" />}
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {activity.description}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{activity.userName}</span>
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-foreground leading-none">
+                            {activity.description}
+                          </p>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                            {format(activity.date.toDate(), "HH:mm 'hs'", { locale: es })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                          <span className="text-primary/70">{activity.userName}</span>
                           <span>•</span>
-                          <span>{format(activity.date.toDate(), "HH:mm 'hs'", { locale: es })}</span>
-                          <span>•</span>
-                          <span className="capitalize">{format(activity.date.toDate(), "d 'de' MMM", { locale: es })}</span>
+                          <span className="capitalize">{format(activity.date.toDate(), "d 'de' MMMM", { locale: es })}</span>
                         </div>
                       </div>
                     </div>
@@ -238,69 +246,77 @@ const Dashboard: React.FC = () => {
         </Card>
 
         {/* Alerts & Today's Appointments */}
-        <div className="col-span-3 space-y-4">
+        <div className="col-span-3 space-y-6">
           {/* Critical Alerts */}
           {(lowStockItems.length > 0 || overdueVaccines.length > 0 || inactivePatients.length > 0) && (
-            <Card className="border-destructive/50 bg-destructive/5">
+            <Card className="border-none bg-destructive/5 shadow-inner">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+                <CardTitle className="text-sm font-black flex items-center gap-2 text-destructive uppercase tracking-widest">
                   <AlertTriangle className="w-4 h-4" /> Alertas Críticas
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 {lowStockItems.length > 0 && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Productos con stock bajo</span>
-                    <Badge variant="destructive" className="h-5">{lowStockItems.length}</Badge>
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-destructive/80">Stock bajo en inventario</span>
+                    <Badge variant="destructive" className="h-5 px-2 rounded-full">{lowStockItems.length}</Badge>
                   </div>
                 )}
                 {overdueVaccines.length > 0 && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Pacientes con vacunas vencidas</span>
-                    <Badge variant="destructive" className="h-5">{overdueVaccines.length}</Badge>
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-destructive/80">Vacunas vencidas</span>
+                    <Badge variant="destructive" className="h-5 px-2 rounded-full">{overdueVaccines.length}</Badge>
                   </div>
                 )}
                 {inactivePatients.length > 0 && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Pacientes inactivos (+3 meses)</span>
-                    <Badge variant="outline" className="h-5">{inactivePatients.length}</Badge>
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-muted-foreground">Pacientes inactivos</span>
+                    <Badge variant="outline" className="h-5 px-2 rounded-full border-muted-foreground/20">{inactivePatients.length}</Badge>
                   </div>
                 )}
               </CardContent>
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Turnos de Hoy</CardTitle>
+          <Card className="glass-card border-none">
+            <CardHeader className="border-b border-primary/5 pb-4">
+              <CardTitle className="text-xl font-bold">Agenda de Hoy</CardTitle>
               <CardDescription>
-                {appointments.length} citas programadas.
+                {appointments.length} citas programadas para hoy.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[250px] pr-4">
+            <CardContent className="pt-6">
+              <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-4">
                   {appointments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center py-8 opacity-20">
-                      <Calendar className="h-8 w-8 mb-2" />
-                      <p className="text-sm">Sin turnos hoy.</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center py-12 opacity-20">
+                      <Calendar className="h-10 w-10 mb-3" />
+                      <p className="text-sm font-bold">Sin turnos hoy.</p>
                     </div>
                   ) : (
                     appointments.map((app) => (
-                      <div key={app.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                      <div key={app.id} className="flex items-center justify-between p-4 rounded-2xl border bg-primary/5 border-primary/10 hover:bg-primary/10 transition-colors group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-sm">
                             {app.patientName.charAt(0)}
                           </div>
                           <div>
-                            <p className="text-sm font-medium">{app.patientName}</p>
-                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {format(app.date.toDate(), 'HH:mm')} - {app.reason}
-                            </p>
+                            <p className="text-sm font-bold">{app.patientName}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Clock className="w-3 h-3 text-primary" />
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                                {format(app.date.toDate(), 'HH:mm')} • {app.reason}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <Badge variant={app.status === 'pending' ? 'outline' : 'default'} className="text-[10px] h-5">
+                        <Badge 
+                          variant={app.status === 'pending' ? 'outline' : 'default'} 
+                          className={cn(
+                            "text-[10px] font-bold uppercase px-2 h-6 rounded-full",
+                            app.status === 'pending' ? "border-primary/20 text-primary bg-primary/5" : "bg-emerald-500"
+                          )}
+                        >
                           {app.status === 'pending' ? 'Pendiente' : 'Atendido'}
                         </Badge>
                       </div>

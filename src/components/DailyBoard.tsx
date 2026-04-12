@@ -89,53 +89,58 @@ const DailyBoard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Flow del Día</h2>
-          <p className="text-muted-foreground">Gestión operativa de pacientes para hoy, {format(new Date(), "d 'de' MMMM", { locale: es })}.</p>
+          <h2 className="text-4xl font-black tracking-tight">Flow del Día</h2>
+          <p className="text-muted-foreground font-medium">Gestión operativa de pacientes para hoy, {format(new Date(), "d 'de' MMMM", { locale: es })}.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1">
-            Total Hoy: {appointments.length}
-          </Badge>
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 flex items-center gap-2">
+            <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total Hoy</span>
+            <Badge className="bg-primary text-primary-foreground rounded-lg font-bold">
+              {appointments.length}
+            </Badge>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full min-h-[600px]">
         {columns.map((column) => (
-          <div key={column.id} className="flex flex-col gap-4 bg-muted/30 rounded-xl p-4 border border-dashed">
+          <div key={column.id} className="flex flex-col gap-6 bg-primary/5 rounded-[2rem] p-6 border border-primary/5 glass">
             <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-2">
-                <div className={`p-2 rounded-lg ${column.color}`}>
-                  <column.icon className="w-4 h-4" />
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl shadow-sm ${column.color}`}>
+                  <column.icon className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold">{column.title}</h3>
+                <h3 className="font-black tracking-tight text-lg">{column.title}</h3>
               </div>
-              <Badge variant="secondary">{getColumnAppointments(column.id).length}</Badge>
+              <Badge variant="secondary" className="rounded-lg font-bold bg-background shadow-sm border-none">
+                {getColumnAppointments(column.id).length}
+              </Badge>
             </div>
 
-            <div className="flex-1 space-y-4 overflow-y-auto">
+            <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
               <AnimatePresence mode="popLayout">
                 {getColumnAppointments(column.id).map((apt) => (
                   <motion.div
                     key={apt.id}
                     layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                   >
-                    <Card className="group hover:border-primary/50 transition-colors cursor-grab active:cursor-grabbing">
-                      <CardContent className="p-4 space-y-3">
+                    <Card className="glass-card border-none rounded-2xl group hover:shadow-xl transition-all duration-300 cursor-grab active:cursor-grabbing overflow-hidden">
+                      <CardContent className="p-5 space-y-4">
                         <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-sm font-black shadow-inner">
                               {apt.patientName.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-bold text-sm">{apt.patientName}</p>
-                              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <p className="font-black text-sm tracking-tight">{apt.patientName}</p>
+                              <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 uppercase tracking-widest">
                                 <Clock className="w-3 h-3" />
                                 {format(apt.date.toDate(), 'HH:mm')}
                               </p>
@@ -143,64 +148,64 @@ const DailyBoard: React.FC = () => {
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="rounded-xl border-none shadow-2xl glass">
                               {column.id !== 'pending' && (
-                                <DropdownMenuItem onClick={() => updateStatus(apt.id, 'pending')}>
-                                  Mover a Pendiente
+                                <DropdownMenuItem onClick={() => updateStatus(apt.id, 'pending')} className="rounded-lg gap-2">
+                                  <Clock className="w-4 h-4" /> Mover a Pendiente
                                 </DropdownMenuItem>
                               )}
                               {column.id !== 'in-consultation' && (
-                                <DropdownMenuItem onClick={() => updateStatus(apt.id, 'in-consultation')}>
-                                  Mover a En Consulta
+                                <DropdownMenuItem onClick={() => updateStatus(apt.id, 'in-consultation')} className="rounded-lg gap-2">
+                                  <Play className="w-4 h-4" /> Mover a En Consulta
                                 </DropdownMenuItem>
                               )}
                               {column.id !== 'attended' && (
-                                <DropdownMenuItem onClick={() => updateStatus(apt.id, 'attended')}>
-                                  Mover a Atendido
+                                <DropdownMenuItem onClick={() => updateStatus(apt.id, 'attended')} className="rounded-lg gap-2">
+                                  <CheckCircle2 className="w-4 h-4" /> Mover a Atendido
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
 
-                        <div className="text-xs text-muted-foreground line-clamp-2 bg-muted/50 p-2 rounded italic">
+                        <div className="text-xs font-medium text-muted-foreground line-clamp-2 bg-muted/30 p-3 rounded-xl italic border border-primary/5">
                           "{apt.reason}"
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t text-[10px]">
+                        <div className="flex items-center justify-between pt-2 border-t border-primary/5">
                           {apt.isHomeVisit ? (
-                            <Badge variant="outline" className="text-orange-500 border-orange-500/20 bg-orange-500/5 gap-1 py-0">
+                            <Badge variant="outline" className="text-orange-600 border-orange-500/20 bg-orange-500/5 gap-1.5 py-1 px-2.5 rounded-lg font-bold text-[10px] uppercase tracking-widest">
                               <Home className="w-3 h-3" /> Domicilio
                             </Badge>
                           ) : (
-                            <span className="text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3" /> Clínica
+                            <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5 uppercase tracking-widest">
+                              <MapPin className="w-3 h-3 text-primary/50" /> Clínica
                             </span>
                           )}
                           
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             {column.id === 'pending' && (
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
-                                className="h-6 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                                className="h-8 px-3 rounded-lg text-blue-600 font-bold text-[10px] uppercase tracking-widest hover:bg-blue-500/10"
                                 onClick={() => updateStatus(apt.id, 'in-consultation')}
                               >
-                                <Play className="w-3 h-3 mr-1" /> Iniciar
+                                <Play className="w-3 h-3 mr-1.5" /> Iniciar
                               </Button>
                             )}
                             {column.id === 'in-consultation' && (
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
-                                className="h-6 px-2 text-green-500 hover:text-green-600 hover:bg-green-50"
+                                className="h-8 px-3 rounded-lg text-green-600 font-bold text-[10px] uppercase tracking-widest hover:bg-green-500/10"
                                 onClick={() => updateStatus(apt.id, 'attended')}
                               >
-                                <CheckCircle2 className="w-3 h-3 mr-1" /> Finalizar
+                                <CheckCircle2 className="w-3 h-3 mr-1.5" /> Finalizar
                               </Button>
                             )}
                           </div>
@@ -212,8 +217,11 @@ const DailyBoard: React.FC = () => {
               </AnimatePresence>
               
               {getColumnAppointments(column.id).length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
-                  <p className="text-xs italic">Sin pacientes</p>
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/30">
+                  <div className="w-12 h-12 rounded-full border-2 border-dashed border-muted-foreground/20 flex items-center justify-center mb-3">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest">Sin pacientes</p>
                 </div>
               )}
             </div>
