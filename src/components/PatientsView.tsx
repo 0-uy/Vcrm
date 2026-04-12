@@ -220,6 +220,36 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                   onChange={e => setNewPatient({...newPatient, ownerPhone: e.target.value})}
                 />
               </div>
+              <Separator />
+              <div className="space-y-2">
+                <Label htmlFor="ownerAddress">Dirección</Label>
+                <Input 
+                  id="ownerAddress" 
+                  placeholder="Ej: Av. Siempre Viva 742" 
+                  value={newPatient.ownerAddress || ''} 
+                  onChange={e => setNewPatient({...newPatient, ownerAddress: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ownerNeighborhood">Barrio / Localidad</Label>
+                  <Input 
+                    id="ownerNeighborhood" 
+                    placeholder="Ej: Springfield" 
+                    value={newPatient.ownerNeighborhood || ''} 
+                    onChange={e => setNewPatient({...newPatient, ownerNeighborhood: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="addressNotes">Notas de Dirección</Label>
+                  <Input 
+                    id="addressNotes" 
+                    placeholder="Ej: Casa de rejas blancas" 
+                    value={newPatient.addressNotes || ''} 
+                    onChange={e => setNewPatient({...newPatient, addressNotes: e.target.value})}
+                  />
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>

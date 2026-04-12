@@ -8,7 +8,9 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  MoreVertical
+  MoreVertical,
+  Home,
+  MapPin
 } from 'lucide-react';
 import { 
   collection, 
@@ -220,6 +222,18 @@ const AppointmentsView: React.FC = () => {
                   onChange={e => setNewAppointment({...newAppointment, reason: e.target.value})}
                 />
               </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="homeVisit" 
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  checked={newAppointment.isHomeVisit || false}
+                  onChange={e => setNewAppointment({...newAppointment, isHomeVisit: e.target.checked})}
+                />
+                <Label htmlFor="homeVisit" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Consulta a domicilio
+                </Label>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
@@ -275,8 +289,36 @@ const AppointmentsView: React.FC = () => {
                   </div>
                   
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg">{app.patientName}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-lg">{app.patientName}</h3>
+                      {app.isHomeVisit && (
+                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20 gap-1">
+                          <Home className="w-3 h-3" /> Domicilio
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">{app.reason}</p>
+                    
+                    {app.isHomeVisit && (
+                      <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                        <MapPin className="w-3 h-3 mt-0.5 shrink-0 text-primary" />
+                        <div>
+                          {(() => {
+                            const p = patients.find(p => p.id === app.patientId);
+                            if (p?.ownerAddress) {
+                              return (
+                                <>
+                                  <span className="font-medium text-foreground">{p.ownerAddress}</span>
+                                  {p.ownerNeighborhood && <span> • {p.ownerNeighborhood}</span>}
+                                  {p.addressNotes && <p className="italic mt-0.5">{p.addressNotes}</p>}
+                                </>
+                              );
+                            }
+                            return <span className="italic">Sin dirección registrada</span>;
+                          })()}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">

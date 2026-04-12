@@ -12,7 +12,9 @@ import {
   Trash2,
   Edit2,
   AlertCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  MapPin,
+  Home
 } from 'lucide-react';
 import { 
   collection, 
@@ -66,10 +68,16 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
   const { profile } = useAuth();
   const [history, setHistory] = useState<ClinicalEvent[]>([]);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [isEditPatientOpen, setIsEditPatientOpen] = useState(false);
+  const [editPatient, setEditPatient] = useState<Partial<Patient>>({});
   const [newEvent, setNewEvent] = useState<Partial<ClinicalEvent>>({
     type: 'consultation',
     date: Timestamp.now(),
   });
+
+  useEffect(() => {
+    setEditPatient(patient);
+  }, [patient]);
 
   useEffect(() => {
     if (!profile) return;
@@ -140,6 +148,33 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     }
   };
 
+  const handleUpdatePatient = async () => {
+    if (!profile || !editPatient.name || !editPatient.ownerName) {
+      toast.error('Por favor completa los campos obligatorios.');
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'patients', patient.id), {
+        ...editPatient,
+        updatedAt: Timestamp.now(),
+      });
+
+      await logActivity({
+        type: 'consultation',
+        description: `Actualizó información del paciente "${patient.name}"`,
+        patientId: patient.id,
+        patientName: patient.name,
+        clinicId: profile.clinicId
+      });
+
+      setIsEditPatientOpen(false);
+      toast.success('Información actualizada correctamente.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `patients/${patient.id}`);
+    }
+  };
+
   const getEventIcon = (type: ClinicalEventType) => {
     switch (type) {
       case 'consultation': return <Stethoscope className="w-4 h-4" />;
@@ -176,6 +211,125 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         </div>
         
         <div className="ml-auto flex gap-2">
+          <Dialog open={isEditPatientOpen} onOpenChange={setIsEditPatientOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Edit2 className="w-4 h-4" /> Editar
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Editar Paciente</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">Nombre Mascota *</Label>
+                    <Input 
+                      id="edit-name" 
+                      value={editPatient.name || ''} 
+                      onChange={e => setEditPatient({...editPatient, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-species">Especie *</Label>
+                    <Select 
+                      value={editPatient.species} 
+                      onValueChange={v => setEditPatient({...editPatient, species: v})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Perro">Perro</SelectItem>
+                        <SelectItem value="Gato">Gato</SelectItem>
+                        <SelectItem value="Ave">Ave</SelectItem>
+                        <SelectItem value="Conejo">Conejo</SelectItem>
+                        <SelectItem value="Otro">Otro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-race">Raza</Label>
+                    <Input 
+                      id="edit-race" 
+                      value={editPatient.race || ''} 
+                      onChange={e => setEditPatient({...editPatient, race: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-age">Edad (años)</Label>
+                    <Input 
+                      id="edit-age" 
+                      type="number" 
+                      value={editPatient.age || ''} 
+                      onChange={e => setEditPatient({...editPatient, age: Number(e.target.value)})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-weight">Peso (kg)</Label>
+                  <Input 
+                    id="edit-weight" 
+                    type="number" 
+                    value={editPatient.weight || ''} 
+                    onChange={e => setEditPatient({...editPatient, weight: Number(e.target.value)})}
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ownerName">Nombre del Dueño *</Label>
+                  <Input 
+                    id="edit-ownerName" 
+                    value={editPatient.ownerName || ''} 
+                    onChange={e => setEditPatient({...editPatient, ownerName: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ownerPhone">Teléfono</Label>
+                  <Input 
+                    id="edit-ownerPhone" 
+                    value={editPatient.ownerPhone || ''} 
+                    onChange={e => setEditPatient({...editPatient, ownerPhone: e.target.value})}
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ownerAddress">Dirección</Label>
+                  <Input 
+                    id="edit-ownerAddress" 
+                    value={editPatient.ownerAddress || ''} 
+                    onChange={e => setEditPatient({...editPatient, ownerAddress: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-ownerNeighborhood">Barrio / Localidad</Label>
+                    <Input 
+                      id="edit-ownerNeighborhood" 
+                      value={editPatient.ownerNeighborhood || ''} 
+                      onChange={e => setEditPatient({...editPatient, ownerNeighborhood: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-addressNotes">Notas de Dirección</Label>
+                    <Input 
+                      id="edit-addressNotes" 
+                      value={editPatient.addressNotes || ''} 
+                      onChange={e => setEditPatient({...editPatient, addressNotes: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditPatientOpen(false)}>Cancelar</Button>
+                <Button onClick={handleUpdatePatient}>Guardar Cambios</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
@@ -272,6 +426,28 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   <p className="text-muted-foreground">Peso</p>
                   <p className="font-medium">{patient.weight || 0} kg</p>
                 </div>
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" /> Ubicación del Dueño
+                </p>
+                {patient.ownerAddress ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{patient.ownerAddress}</p>
+                    {patient.ownerNeighborhood && (
+                      <p className="text-xs text-muted-foreground">{patient.ownerNeighborhood}</p>
+                    )}
+                    {patient.addressNotes && (
+                      <div className="flex items-start gap-2 mt-1 p-2 bg-muted/50 rounded text-xs italic">
+                        <Home className="w-3 h-3 mt-0.5 shrink-0" />
+                        <span>{patient.addressNotes}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">Sin dirección registrada</p>
+                )}
               </div>
               <Separator />
               <div className="space-y-2">

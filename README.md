@@ -1,20 +1,30 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# VCRM - Veterinary Management System
 
-# Run and deploy your AI Studio app
+VCRM is a comprehensive CRM and management system designed specifically for veterinary clinics. It helps veterinarians manage patients, appointments, inventory, and clinical history in a streamlined and efficient way.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/cbd5af9e-3e45-420c-87aa-e95d3a2e365f
+- **Patient Management**: Detailed records for pets and their owners, including address and contact information.
+- **Appointment Scheduling**: Manage daily appointments with support for home visits.
+- **Clinical History**: Track consultations, vaccinations, treatments, and notes for each patient.
+- **Inventory Control**: Simple inventory management for medications and supplies with low-stock alerts.
+- **Dashboard**: Real-time activity feed and critical alerts (low stock, overdue vaccines, inactive patients).
+- **Multi-user Support**: Create or join clinics with unique access codes.
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- **Frontend**: React, Vite, Tailwind CSS, shadcn/ui.
+- **Backend/Database**: Firebase (Firestore, Authentication).
+- **Icons**: Lucide React.
+- **Animations**: Framer Motion.
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Clone the repository.
+2. Install dependencies: `npm install`.
+3. Set up your Firebase project and add the configuration to `firebase-applet-config.json`.
+4. Run the development server: `npm run dev`.
+
+## License
+
+MIT

@@ -128,7 +128,10 @@ service cloud.firestore {
              data.species is string &&
              data.ownerName is string &&
              data.clinicId is string &&
-             data.createdAt is timestamp;
+             data.createdAt is timestamp &&
+             (!('ownerAddress' in data) || data.ownerAddress is string) &&
+             (!('ownerNeighborhood' in data) || data.ownerNeighborhood is string) &&
+             (!('addressNotes' in data) || data.addressNotes is string);
     }
 
     function isValidClinicalEvent(data) {
@@ -167,7 +170,8 @@ service cloud.firestore {
              data.date is timestamp &&
              data.reason is string &&
              data.status in ['pending', 'attended', 'cancelled'] &&
-             data.clinicId is string;
+             data.clinicId is string &&
+             (!('isHomeVisit' in data) || data.isHomeVisit is bool);
     }
 
     function isValidLog(data) {

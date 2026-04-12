@@ -27,6 +27,9 @@ export interface Patient {
   weight?: number;
   ownerName: string;
   ownerPhone?: string;
+  ownerAddress?: string;
+  ownerNeighborhood?: string;
+  addressNotes?: string;
   clinicId: string;
   createdAt: Timestamp;
   lastVisitAt?: Timestamp;
@@ -76,6 +79,7 @@ export interface Appointment {
   date: Timestamp;
   reason: string;
   status: AppointmentStatus;
+  isHomeVisit?: boolean;
   clinicId: string;
 }
 
