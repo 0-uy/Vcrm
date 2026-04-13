@@ -26,7 +26,11 @@ import {
   Download,
   Users,
   Phone,
-  Dog
+  Dog,
+  Camera,
+  Upload,
+  X,
+  Image as ImageIcon
 } from 'lucide-react';
 import { 
   collection, 
@@ -69,6 +73,7 @@ import { toast } from 'sonner';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import PatientForm from './PatientForm';
 import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
 
 interface PatientDetailViewProps {
@@ -251,17 +256,32 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     }
   };
 
-  const handleUpdatePatient = async () => {
-    if (!profile || !editPatient.name || !editPatient.ownerName) {
+  const handleUpdatePatient = async (data: Partial<Patient>, newAttachments: any[]) => {
+    if (!profile || !data.name || !data.ownerName) {
       toast.error('Por favor completa los campos obligatorios.');
       return;
     }
 
     try {
       await updateDoc(doc(db, 'patients', patient.id), {
-        ...editPatient,
+        ...data,
         updatedAt: Timestamp.now(),
       });
+
+      // Handle new attachments
+      for (const att of newAttachments) {
+        if (!att.url && att.preview) {
+          await addDoc(collection(db, 'attachments'), {
+            patientId: patient.id,
+            clinicId: profile.clinicId,
+            date: Timestamp.now(),
+            name: att.name,
+            type: att.type,
+            url: att.preview,
+            size: att.size || 0
+          });
+        }
+      }
 
       await logActivity({
         type: 'consultation',
@@ -482,127 +502,18 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <Edit2 className="w-4 h-4" /> Editar Perfil
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] glass dark:glass-dark border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">Editar Paciente</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre Mascota *</Label>
-                    <Input 
-                      id="edit-name" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editPatient.name || ''} 
-                      onChange={e => setEditPatient({...editPatient, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-species" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Especie *</Label>
-                    <Select 
-                      value={editPatient.species} 
-                      onValueChange={v => setEditPatient({...editPatient, species: v})}
-                    >
-                      <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="Perro">Perro</SelectItem>
-                        <SelectItem value="Gato">Gato</SelectItem>
-                        <SelectItem value="Ave">Ave</SelectItem>
-                        <SelectItem value="Conejo">Conejo</SelectItem>
-                        <SelectItem value="Otro">Otro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-race" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Raza</Label>
-                    <Input 
-                      id="edit-race" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editPatient.race || ''} 
-                      onChange={e => setEditPatient({...editPatient, race: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-age" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Edad (años)</Label>
-                    <Input 
-                      id="edit-age" 
-                      type="number" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editPatient.age || ''} 
-                      onChange={e => setEditPatient({...editPatient, age: Number(e.target.value)})}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-weight" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Peso (kg)</Label>
-                  <Input 
-                    id="edit-weight" 
-                    type="number" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={editPatient.weight || ''} 
-                    onChange={e => setEditPatient({...editPatient, weight: Number(e.target.value)})}
-                  />
-                </div>
-                <Separator className="bg-primary/5" />
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-ownerName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Dueño *</Label>
-                    <Input 
-                      id="edit-ownerName" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editPatient.ownerName || ''} 
-                      onChange={e => setEditPatient({...editPatient, ownerName: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-ownerPhone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Teléfono</Label>
-                    <Input 
-                      id="edit-ownerPhone" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editPatient.ownerPhone || ''} 
-                      onChange={e => setEditPatient({...editPatient, ownerPhone: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <Separator className="bg-primary/5" />
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ownerAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dirección</Label>
-                  <Input 
-                    id="edit-ownerAddress" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={editPatient.ownerAddress || ''} 
-                    onChange={e => setEditPatient({...editPatient, ownerAddress: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-ownerNeighborhood" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Barrio / Localidad</Label>
-                    <Input 
-                      id="edit-ownerNeighborhood" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editPatient.ownerNeighborhood || ''} 
-                      onChange={e => setEditPatient({...editPatient, ownerNeighborhood: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-addressNotes" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notas de Dirección</Label>
-                    <Input 
-                      id="edit-addressNotes" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editPatient.addressNotes || ''} 
-                      onChange={e => setEditPatient({...editPatient, addressNotes: e.target.value})}
-                    />
-                  </div>
-                </div>
+            <DialogContent className="sm:max-w-[700px] glass border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+              <div className="p-8">
+                <DialogHeader className="mb-6">
+                  <DialogTitle className="text-3xl font-black tracking-tight">Editar Paciente</DialogTitle>
+                </DialogHeader>
+                <PatientForm 
+                  initialData={patient}
+                  onSubmit={handleUpdatePatient} 
+                  onCancel={() => setIsEditPatientOpen(false)} 
+                  title="Editar Paciente" 
+                />
               </div>
-              <DialogFooter className="gap-2">
-                <Button variant="ghost" onClick={() => setIsEditPatientOpen(false)} className="rounded-xl">Cancelar</Button>
-                <Button onClick={handleUpdatePatient} className="rounded-xl px-8 shadow-lg shadow-primary/20">Guardar Cambios</Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
 
@@ -865,63 +776,140 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
 
           <Dialog open={isAddAttachmentOpen} onOpenChange={setIsAddAttachmentOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Paperclip className="w-4 h-4" /> Adjunto
+              <Button variant="outline" className="gap-2 rounded-xl border-primary/10 hover:bg-primary/5">
+                <Paperclip className="w-4 h-4" /> Nuevo Adjunto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px] glass dark:glass-dark border border-white/10 shadow-2xl">
-              <DialogHeader>
-                <DialogTitle>Agregar Adjunto</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="att-name">Nombre del archivo *</Label>
-                  <Input 
-                    id="att-name" 
-                    placeholder="Ej: Radiografía Tórax" 
-                    value={newAttachment.name}
-                    onChange={e => setNewAttachment({...newAttachment, name: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="att-type">Tipo</Label>
-                  <Select 
-                    value={newAttachment.type} 
-                    onValueChange={v => setNewAttachment({...newAttachment, type: v})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="image">Imagen / Foto</SelectItem>
-                      <SelectItem value="pdf">Análisis (PDF)</SelectItem>
-                      <SelectItem value="study">Estudio / Informe</SelectItem>
-                      <SelectItem value="other">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="att-url">URL del archivo *</Label>
-                  <div className="flex gap-2">
+            <DialogContent className="sm:max-w-[500px] glass border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+              <div className="p-8">
+                <DialogHeader className="mb-6">
+                  <DialogTitle className="text-2xl font-black tracking-tight">Agregar Adjunto</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Nombre del archivo *</Label>
                     <Input 
-                      id="att-url" 
-                      placeholder="https://..." 
-                      value={newAttachment.url}
-                      onChange={e => setNewAttachment({...newAttachment, url: e.target.value})}
+                      placeholder="Ej: Radiografía Tórax" 
+                      className="rounded-xl bg-muted/30 border-border"
+                      value={newAttachment.name}
+                      onChange={e => setNewAttachment({...newAttachment, name: e.target.value})}
                     />
-                    <Button variant="secondary" size="icon" type="button">
-                      <FileUp className="w-4 h-4" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="h-20 flex flex-col gap-2 rounded-2xl border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.capture = 'environment';
+                        input.onchange = (e: any) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNewAttachment({
+                                ...newAttachment,
+                                name: file.name,
+                                type: 'image',
+                                url: reader.result as string,
+                                size: file.size
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        };
+                        input.click();
+                      }}
+                    >
+                      <Camera className="w-5 h-5 text-primary" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Cámara</span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="h-20 flex flex-col gap-2 rounded-2xl border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*,application/pdf';
+                        input.onchange = (e: any) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNewAttachment({
+                                ...newAttachment,
+                                name: file.name,
+                                type: file.type.startsWith('image/') ? 'image' : 'pdf',
+                                url: reader.result as string,
+                                size: file.size
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        };
+                        input.click();
+                      }}
+                    >
+                      <Upload className="w-5 h-5 text-primary" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Galería</span>
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic">
-                    Nota: En esta demo, ingresa una URL directa al archivo.
-                  </p>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">O agregar por URL</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="https://..." 
+                        className="rounded-xl bg-muted/30 border-border"
+                        value={newAttachment.url?.startsWith('data:') ? '' : newAttachment.url}
+                        onChange={e => setNewAttachment({...newAttachment, url: e.target.value, type: 'url'})}
+                      />
+                    </div>
+                  </div>
+
+                  {newAttachment.url && (
+                    <div className="relative aspect-video rounded-2xl overflow-hidden border border-border bg-muted/30">
+                      {newAttachment.type === 'image' || newAttachment.type === 'url' ? (
+                        <img 
+                          src={newAttachment.url} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                          <FileText className="w-12 h-12 text-primary/40 mb-2" />
+                          <span className="text-xs font-bold truncate w-full">{newAttachment.name}</span>
+                        </div>
+                      )}
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                        onClick={() => setNewAttachment({...newAttachment, url: '', name: ''})}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex gap-3">
+                    <Button variant="ghost" onClick={() => setIsAddAttachmentOpen(false)} className="flex-1 h-12 rounded-xl font-bold">
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleAddAttachment} 
+                      className="flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
+                      disabled={!newAttachment.url || !newAttachment.name}
+                    >
+                      Guardar Adjunto
+                    </Button>
+                  </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddAttachmentOpen(false)}>Cancelar</Button>
-                <Button onClick={handleAddAttachment}>Agregar</Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -947,6 +935,14 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   <p className="font-bold text-lg">{patient.race || 'Sin raza'}</p>
                 </div>
                 <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sexo</p>
+                  <p className="font-bold text-lg capitalize">{patient.sex?.replace('_', ' ') || 'No especificado'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Esterilizado</p>
+                  <p className="font-bold text-lg capitalize">{patient.isNeutered || 'No informado'}</p>
+                </div>
+                <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Edad</p>
                   <p className="font-bold text-lg">{patient.age || 0} años</p>
                 </div>
@@ -955,12 +951,49 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   <p className="font-bold text-lg">{patient.weight || 0} kg</p>
                 </div>
               </div>
+
+              <Separator className="bg-primary/5" />
+
+              <div className="space-y-4">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-primary" /> Información Clínica
+                </p>
+                <div className="space-y-3">
+                  {patient.allergies && (
+                    <div className="bg-red-500/5 p-3 rounded-2xl border border-red-500/10">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-red-500 mb-1">Alergias</p>
+                      <p className="text-sm font-bold text-red-600">{patient.allergies}</p>
+                    </div>
+                  )}
+                  {patient.medicalHistory && (
+                    <div className="bg-primary/5 p-3 rounded-2xl border border-primary/10">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-primary mb-1">Antecedentes</p>
+                      <p className="text-sm font-medium leading-relaxed">{patient.medicalHistory}</p>
+                    </div>
+                  )}
+                  {patient.currentMedication && (
+                    <div className="bg-primary/5 p-3 rounded-2xl border border-primary/10">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-primary mb-1">Medicación Actual</p>
+                      <p className="text-sm font-medium leading-relaxed">{patient.currentMedication}</p>
+                    </div>
+                  )}
+                  {patient.observations && (
+                    <div className="bg-muted/30 p-3 rounded-2xl border border-border">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Observaciones</p>
+                      <p className="text-sm font-medium leading-relaxed">{patient.observations}</p>
+                    </div>
+                  )}
+                  {!patient.allergies && !patient.medicalHistory && !patient.currentMedication && !patient.observations && (
+                    <p className="text-xs text-muted-foreground italic text-center py-2">Sin información clínica registrada</p>
+                  )}
+                </div>
+              </div>
               
               <Separator className="bg-primary/5" />
               
               <div className="space-y-4">
                 <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" /> Ubicación del Dueño
+                  <MapPin className="w-4 h-4 text-primary" /> Ubicación y Contacto
                 </p>
                 {patient.ownerAddress ? (
                   <div className="space-y-2">
@@ -980,6 +1013,12 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 ) : (
                   <div className="p-4 rounded-2xl border border-dashed text-center">
                     <p className="text-xs text-muted-foreground italic font-medium">Sin dirección registrada</p>
+                  </div>
+                )}
+                {patient.emergencyContact && (
+                  <div className="bg-orange-500/5 p-3 rounded-2xl border border-orange-500/10">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-orange-600 mb-1">Contacto de Emergencia</p>
+                    <p className="text-sm font-bold">{patient.emergencyContact}</p>
                   </div>
                 )}
               </div>
@@ -1180,7 +1219,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
             </TabsContent>
 
             <TabsContent value="attachments" className="mt-8">
-              <div className="grid gap-6 sm:grid-cols-2">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {attachments.length === 0 ? (
                   <div className="col-span-full text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
                     <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -1190,38 +1229,67 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </div>
                 ) : (
                   attachments.map((att) => (
-                    <Card key={att.id} className="border-none rounded-3xl overflow-hidden group hover:shadow-xl transition-all">
+                    <Card key={att.id} className="border-none rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-500 bg-card border border-primary/5">
                       <CardContent className="p-0">
-                        <div className="flex items-center p-5 gap-4">
-                          <div className={cn(
-                            "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                            att.type === 'image' ? "bg-blue-500/10 text-blue-500" : 
-                            att.type === 'pdf' ? "bg-red-500/10 text-red-500" : "bg-muted text-muted-foreground"
-                          )}>
-                            {att.type === 'image' ? <FileUp className="w-7 h-7" /> : <FileText className="w-7 h-7" />}
+                        <div className="p-5">
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className={cn(
+                              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
+                              att.type === 'image' || att.type === 'url' ? "bg-blue-500/10 text-blue-500" : 
+                              att.type === 'pdf' ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary"
+                            )}>
+                              {att.type === 'image' || att.type === 'url' ? <ImageIcon className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-black text-sm truncate tracking-tight group-hover:text-primary transition-colors">{att.name}</p>
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                                {att.type} • {format(att.date.toDate(), 'dd MMM yyyy', { locale: es })}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/5" asChild title="Ver">
+                                <a href={att.url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                onClick={async () => {
+                                  if (confirm('¿Eliminar este adjunto?')) {
+                                    try {
+                                      await deleteDoc(doc(db, 'attachments', att.id));
+                                      toast.success('Adjunto eliminado');
+                                    } catch (e) {
+                                      toast.error('Error al eliminar');
+                                    }
+                                  }
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-black text-sm truncate tracking-tight">{att.name}</p>
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
-                              {att.type} • {format(att.date.toDate(), 'dd/MM/yyyy')}
-                            </p>
-                          </div>
-                          <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/5" asChild>
-                            <a href={att.url} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </Button>
+                          
+                          {(att.type === 'image' || att.type === 'url') && (
+                            <div className="aspect-video bg-muted rounded-2xl relative overflow-hidden border border-primary/5">
+                              <img 
+                                src={att.url} 
+                                alt={att.name} 
+                                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          )}
+                          
+                          {att.type === 'pdf' && (
+                            <div className="aspect-video bg-red-500/5 rounded-2xl flex flex-col items-center justify-center border border-red-500/10">
+                              <FileText className="w-10 h-10 text-red-500/40 mb-2" />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-red-500/60">Documento PDF</span>
+                            </div>
+                          )}
                         </div>
-                        {att.type === 'image' && (
-                          <div className="h-40 bg-muted relative overflow-hidden border-t border-primary/5">
-                            <img 
-                              src={att.url} 
-                              alt={att.name} 
-                              className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                              referrerPolicy="no-referrer"
-                            />
-                          </div>
-                        )}
                       </CardContent>
                     </Card>
                   ))

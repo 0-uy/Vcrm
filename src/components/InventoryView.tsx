@@ -147,7 +147,7 @@ const InventoryView: React.FC = () => {
               <Plus className="w-5 h-5" /> Nuevo Producto
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] glass dark:glass-dark border border-white/10 shadow-2xl rounded-3xl">
+          <DialogContent className="sm:max-w-[425px] glass border-none shadow-2xl rounded-3xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Agregar al Inventario</DialogTitle>
             </DialogHeader>
@@ -216,7 +216,7 @@ const InventoryView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item) => (
           <Card key={item.id} className={cn(
-            "border-none rounded-3xl shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
+            "border border-border rounded-3xl shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
             item.stock <= item.minStock ? "ring-2 ring-destructive/20" : ""
           )}>
             <CardContent className="p-6">

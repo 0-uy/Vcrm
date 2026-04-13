@@ -56,9 +56,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     <>
       {/* Mobile Toggle */}
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
+        className="fixed top-4 left-4 z-50 md:hidden bg-background/80 backdrop-blur-md border-border shadow-lg"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X /> : <Menu />}
@@ -118,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
           <div className="mt-auto p-6 space-y-6">
             <Separator className="bg-border" />
-            <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-muted/50 border border-border">
+            <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-muted/30 border border-border">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-black text-primary border border-primary/20">
                 {profile?.displayName?.charAt(0) || profile?.email.charAt(0)}
               </div>

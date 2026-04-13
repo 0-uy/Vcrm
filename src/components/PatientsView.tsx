@@ -32,6 +32,7 @@ import {
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
 import { Patient } from '../types';
+import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
@@ -56,7 +57,7 @@ import { toast } from 'sonner';
 import { format, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
+import PatientForm from './PatientForm';
 
 interface PatientsViewProps {
   onSelectPatient: (patient: Patient) => void;
@@ -91,23 +92,36 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
     return () => unsubscribe();
   }, [profile]);
 
-  const handleAddPatient = async () => {
-    if (!profile || !newPatient.name || !newPatient.ownerName) {
+  const handleAddPatient = async (data: Partial<Patient>, attachments: any[]) => {
+    if (!profile || !data.name || !data.ownerName) {
       toast.error('Por favor completa los campos obligatorios.');
       return;
     }
 
     try {
-      await addDoc(collection(db, 'patients'), {
-        ...newPatient,
+      const docRef = await addDoc(collection(db, 'patients'), {
+        ...data,
         clinicId: profile.clinicId,
         createdAt: Timestamp.now(),
       });
 
+      // Handle attachments (simulated)
+      for (const att of attachments) {
+        await addDoc(collection(db, 'attachments'), {
+          patientId: docRef.id,
+          clinicId: profile.clinicId,
+          date: Timestamp.now(),
+          name: att.name,
+          type: att.type,
+          url: att.url || att.preview, // In a real app, upload to Storage first
+          size: att.size || 0
+        });
+      }
+
       await logActivity({
         type: 'consultation',
-        description: `Registró al paciente "${newPatient.name}"`,
-        patientName: newPatient.name,
+        description: `Registró al paciente "${data.name}"`,
+        patientName: data.name,
         clinicId: profile.clinicId
       });
 
@@ -119,24 +133,39 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
     }
   };
 
-  const handleEditPatient = async () => {
-    if (!profile || !editingPatient || !editingPatient.name || !editingPatient.ownerName) {
+  const handleEditPatient = async (data: Partial<Patient>, attachments: any[]) => {
+    if (!profile || !editingPatient || !data.name || !data.ownerName) {
       toast.error('Por favor completa los campos obligatorios.');
       return;
     }
 
     try {
-      const { id, ...data } = editingPatient;
+      const { id } = editingPatient;
       await updateDoc(doc(db, 'patients', id), {
         ...data,
         updatedAt: Timestamp.now(),
       });
 
+      // Handle new attachments
+      for (const att of attachments) {
+        if (!att.url && att.preview) { // New attachment
+          await addDoc(collection(db, 'attachments'), {
+            patientId: id,
+            clinicId: profile.clinicId,
+            date: Timestamp.now(),
+            name: att.name,
+            type: att.type,
+            url: att.preview,
+            size: att.size || 0
+          });
+        }
+      }
+
       await logActivity({
         type: 'consultation',
-        description: `Actualizó información del paciente "${editingPatient.name}"`,
+        description: `Actualizó información del paciente "${data.name}"`,
         patientId: id,
-        patientName: editingPatient.name,
+        patientName: data.name,
         clinicId: profile.clinicId
       });
 
@@ -179,245 +208,38 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
               <Plus className="w-4 h-4" /> Nuevo Paciente
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px] glass dark:glass-dark border border-white/10 shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Agregar Nuevo Paciente</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-6 py-4">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre Mascota *</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Ej: Max" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={newPatient.name || ''} 
-                    onChange={e => setNewPatient({...newPatient, name: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="species" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Especie *</Label>
-                  <Select 
-                    value={newPatient.species} 
-                    onValueChange={v => setNewPatient({...newPatient, species: v})}
-                  >
-                    <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="Perro">Perro</SelectItem>
-                      <SelectItem value="Gato">Gato</SelectItem>
-                      <SelectItem value="Ave">Ave</SelectItem>
-                      <SelectItem value="Conejo">Conejo</SelectItem>
-                      <SelectItem value="Otro">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="race" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Raza</Label>
-                  <Input 
-                    id="race" 
-                    placeholder="Ej: Golden Retriever" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={newPatient.race || ''} 
-                    onChange={e => setNewPatient({...newPatient, race: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Edad (años)</Label>
-                  <Input 
-                    id="age" 
-                    type="number" 
-                    placeholder="0" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={newPatient.age || ''} 
-                    onChange={e => setNewPatient({...newPatient, age: Number(e.target.value)})}
-                  />
-                </div>
-              </div>
-              <Separator className="bg-primary/5" />
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="ownerName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Dueño *</Label>
-                  <Input 
-                    id="ownerName" 
-                    placeholder="Ej: Juan Pérez" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={newPatient.ownerName || ''} 
-                    onChange={e => setNewPatient({...newPatient, ownerName: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ownerPhone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Teléfono del Dueño</Label>
-                  <Input 
-                    id="ownerPhone" 
-                    placeholder="Ej: +54 9 11..." 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={newPatient.ownerPhone || ''} 
-                    onChange={e => setNewPatient({...newPatient, ownerPhone: e.target.value})}
-                  />
-                </div>
-              </div>
-              <Separator className="bg-primary/5" />
-              <div className="space-y-2">
-                <Label htmlFor="ownerAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dirección</Label>
-                <Input 
-                  id="ownerAddress" 
-                  placeholder="Ej: Av. Siempre Viva 742" 
-                  className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                  value={newPatient.ownerAddress || ''} 
-                  onChange={e => setNewPatient({...newPatient, ownerAddress: e.target.value})}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="ownerNeighborhood" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Barrio / Localidad</Label>
-                  <Input 
-                    id="ownerNeighborhood" 
-                    placeholder="Ej: Springfield" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={newPatient.ownerNeighborhood || ''} 
-                    onChange={e => setNewPatient({...newPatient, ownerNeighborhood: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="addressNotes" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notas de Dirección</Label>
-                  <Input 
-                    id="addressNotes" 
-                    placeholder="Ej: Casa de rejas blancas" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={newPatient.addressNotes || ''} 
-                    onChange={e => setNewPatient({...newPatient, addressNotes: e.target.value})}
-                  />
-                </div>
-              </div>
+          <DialogContent className="sm:max-w-[700px] glass border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+            <div className="p-8">
+              <DialogHeader className="mb-6">
+                <DialogTitle className="text-3xl font-black tracking-tight">Nuevo Paciente</DialogTitle>
+              </DialogHeader>
+              <PatientForm 
+                onSubmit={handleAddPatient} 
+                onCancel={() => setIsAddDialogOpen(false)} 
+                title="Nuevo Paciente" 
+              />
             </div>
-            <DialogFooter className="gap-2">
-              <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-              <Button onClick={handleAddPatient} className="rounded-xl px-8 shadow-lg shadow-primary/20">Guardar Paciente</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[550px] glass dark:glass-dark border border-white/10 shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Editar Paciente</DialogTitle>
-            </DialogHeader>
-            {editingPatient && (
-              <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre Mascota *</Label>
-                    <Input 
-                      id="edit-name" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editingPatient.name || ''} 
-                      onChange={e => setEditingPatient({...editingPatient, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-species" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Especie *</Label>
-                    <Select 
-                      value={editingPatient.species} 
-                      onValueChange={v => setEditingPatient({...editingPatient, species: v})}
-                    >
-                      <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="Perro">Perro</SelectItem>
-                        <SelectItem value="Gato">Gato</SelectItem>
-                        <SelectItem value="Ave">Ave</SelectItem>
-                        <SelectItem value="Conejo">Conejo</SelectItem>
-                        <SelectItem value="Otro">Otro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-race" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Raza</Label>
-                    <Input 
-                      id="edit-race" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editingPatient.race || ''} 
-                      onChange={e => setEditingPatient({...editingPatient, race: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-age" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Edad (años)</Label>
-                    <Input 
-                      id="edit-age" 
-                      type="number" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editingPatient.age || ''} 
-                      onChange={e => setEditingPatient({...editingPatient, age: Number(e.target.value)})}
-                    />
-                  </div>
-                </div>
-                <Separator className="bg-primary/5" />
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-ownerName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Dueño *</Label>
-                    <Input 
-                      id="edit-ownerName" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editingPatient.ownerName || ''} 
-                      onChange={e => setEditingPatient({...editingPatient, ownerName: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-ownerPhone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Teléfono del Dueño</Label>
-                    <Input 
-                      id="edit-ownerPhone" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editingPatient.ownerPhone || ''} 
-                      onChange={e => setEditingPatient({...editingPatient, ownerPhone: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <Separator className="bg-primary/5" />
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ownerAddress" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dirección</Label>
-                  <Input 
-                    id="edit-ownerAddress" 
-                    className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                    value={editingPatient.ownerAddress || ''} 
-                    onChange={e => setEditingPatient({...editingPatient, ownerAddress: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-ownerNeighborhood" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Barrio / Localidad</Label>
-                    <Input 
-                      id="edit-ownerNeighborhood" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editingPatient.ownerNeighborhood || ''} 
-                      onChange={e => setEditingPatient({...editingPatient, ownerNeighborhood: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-addressNotes" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notas de Dirección</Label>
-                    <Input 
-                      id="edit-addressNotes" 
-                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      value={editingPatient.addressNotes || ''} 
-                      onChange={e => setEditingPatient({...editingPatient, addressNotes: e.target.value})}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            <DialogFooter className="gap-2">
-              <Button variant="ghost" onClick={() => {
-                setIsEditDialogOpen(false);
-                setEditingPatient(null);
-              }} className="rounded-xl">Cancelar</Button>
-              <Button onClick={handleEditPatient} className="rounded-xl px-8 shadow-lg shadow-primary/20">Guardar Cambios</Button>
-            </DialogFooter>
+          <DialogContent className="sm:max-w-[700px] glass border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+            <div className="p-8">
+              <DialogHeader className="mb-6">
+                <DialogTitle className="text-3xl font-black tracking-tight">Editar Paciente</DialogTitle>
+              </DialogHeader>
+              {editingPatient && (
+                <PatientForm 
+                  initialData={editingPatient}
+                  onSubmit={handleEditPatient} 
+                  onCancel={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingPatient(null);
+                  }} 
+                  title="Editar Paciente" 
+                />
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -446,7 +268,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
           filteredPatients.map((patient) => (
             <Card 
               key={patient.id} 
-              className="border-none rounded-3xl overflow-hidden group cursor-pointer transition-all duration-500 hover:-translate-y-1 shadow-lg"
+              className="border border-border rounded-3xl overflow-hidden group cursor-pointer transition-all duration-500 hover:-translate-y-1 shadow-lg"
               onClick={() => onSelectPatient(patient)}
             >
               <CardContent className="p-0">

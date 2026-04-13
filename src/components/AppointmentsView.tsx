@@ -164,7 +164,7 @@ const AppointmentsView: React.FC = () => {
               <Plus className="w-5 h-5" /> Nuevo Turno
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border border-white/10 shadow-2xl rounded-3xl">
+          <DialogContent className="sm:max-w-[500px] glass border-none shadow-2xl rounded-3xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Programar Turno</DialogTitle>
             </DialogHeader>
@@ -175,10 +175,10 @@ const AppointmentsView: React.FC = () => {
                   value={newAppointment.patientId} 
                   onValueChange={v => setNewAppointment({...newAppointment, patientId: v})}
                 >
-                  <SelectTrigger className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm">
+                  <SelectTrigger className="rounded-xl h-11 bg-muted/50 border-border shadow-sm">
                     <SelectValue placeholder="Seleccionar paciente" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-none glass dark:glass-dark shadow-2xl">
+                  <SelectContent className="rounded-xl border border-border bg-popover shadow-2xl">
                     {patients.map(p => (
                       <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.name} ({p.ownerName})</SelectItem>
                     ))}
@@ -191,7 +191,7 @@ const AppointmentsView: React.FC = () => {
                   <Input 
                     id="date" 
                     type="date" 
-                    className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm"
+                    className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
                     defaultValue={format(new Date(), 'yyyy-MM-dd')}
                     onChange={e => {
                       const date = new Date(e.target.value);
@@ -206,7 +206,7 @@ const AppointmentsView: React.FC = () => {
                   <Input 
                     id="time" 
                     type="time" 
-                    className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm"
+                    className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
                     defaultValue={format(new Date(), 'HH:mm')}
                     onChange={e => {
                       const [h, m] = e.target.value.split(':').map(Number);
@@ -222,7 +222,7 @@ const AppointmentsView: React.FC = () => {
                 <Input 
                   id="reason" 
                   placeholder="Ej: Vacunación, Control" 
-                  className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm"
+                  className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
                   value={newAppointment.reason || ''} 
                   onChange={e => setNewAppointment({...newAppointment, reason: e.target.value})}
                 />
@@ -283,7 +283,7 @@ const AppointmentsView: React.FC = () => {
         ) : (
           filteredAppointments.map((app) => (
             <Card key={app.id} className={cn(
-              "border-none rounded-[2rem] overflow-hidden transition-all duration-500 group hover:shadow-2xl hover:-translate-y-1",
+              "border border-border rounded-[2rem] overflow-hidden transition-all duration-500 group hover:shadow-2xl hover:-translate-y-1",
               app.status === 'attended' && "opacity-60 grayscale-[0.5]"
             )}>
               <CardContent className="p-0">

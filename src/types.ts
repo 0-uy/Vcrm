@@ -29,6 +29,13 @@ export interface Patient {
   name: string;
   species: string;
   race?: string;
+  sex?: 'macho' | 'hembra' | 'no_especificado';
+  isNeutered?: 'si' | 'no' | 'no_informado';
+  allergies?: string;
+  medicalHistory?: string;
+  currentMedication?: string;
+  observations?: string;
+  emergencyContact?: string;
   age?: number;
   weight?: number;
   ownerName: string;

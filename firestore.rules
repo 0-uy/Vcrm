@@ -114,7 +114,7 @@ service cloud.firestore {
     }
 
     function isClinicActive(clinicId) {
-      return isSuperAdmin() || (get(/databases/$(database)/documents/clinics/$(clinicId)).data.status in ['active', 'trial']);
+      return isSuperAdmin() || (exists(/databases/$(database)/documents/clinics/$(clinicId)) && get(/databases/$(database)/documents/clinics/$(clinicId)).data.status in ['active', 'trial']);
     }
 
     function hasOnlyAllowedFields(fields) {
@@ -152,9 +152,22 @@ service cloud.firestore {
              data.ownerName is string &&
              data.clinicId is string &&
              data.createdAt is timestamp &&
+             (!('race' in data) || data.race is string) &&
+             (!('sex' in data) || data.sex in ['macho', 'hembra', 'no_especificado']) &&
+             (!('isNeutered' in data) || data.isNeutered in ['si', 'no', 'no_informado']) &&
+             (!('allergies' in data) || data.allergies is string) &&
+             (!('medicalHistory' in data) || data.medicalHistory is string) &&
+             (!('currentMedication' in data) || data.currentMedication is string) &&
+             (!('observations' in data) || data.observations is string) &&
+             (!('emergencyContact' in data) || data.emergencyContact is string) &&
+             (!('age' in data) || data.age is number) &&
+             (!('weight' in data) || data.weight is number) &&
+             (!('ownerPhone' in data) || data.ownerPhone is string) &&
              (!('ownerAddress' in data) || data.ownerAddress is string) &&
              (!('ownerNeighborhood' in data) || data.ownerNeighborhood is string) &&
-             (!('addressNotes' in data) || data.addressNotes is string);
+             (!('addressNotes' in data) || data.addressNotes is string) &&
+             (!('lastVisitAt' in data) || data.lastVisitAt is timestamp) &&
+             (!('nextVaccineDate' in data) || data.nextVaccineDate is timestamp);
     }
 
     function isValidClinicalEvent(data) {
@@ -162,7 +175,9 @@ service cloud.firestore {
              data.date is timestamp &&
              data.type in ['consultation', 'vaccine', 'treatment', 'note'] &&
              data.description is string && data.description.size() < 5000 &&
-             data.clinicId is string;
+             data.clinicId is string &&
+             (!('patientName' in data) || data.patientName is string) &&
+             (!('nextDate' in data) || data.nextDate is timestamp);
     }
 
     function isValidActivity(data) {
@@ -192,7 +207,7 @@ service cloud.firestore {
              data.patientName is string &&
              data.date is timestamp &&
              data.reason is string &&
-             data.status in ['pending', 'attended', 'cancelled'] &&
+             data.status in ['pending', 'in-consultation', 'attended', 'cancelled'] &&
              data.clinicId is string &&
              (!('isHomeVisit' in data) || data.isHomeVisit is bool);
     }

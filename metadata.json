@@ -1,5 +1,5 @@
 {
   "name": "VetCare CRM",
   "description": "Sistema de Gestión Veterinaria (PMS) profesional con enfoque en experiencia de usuario premium, gestión clínica avanzada y control administrativo total.",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["camera"]
 }

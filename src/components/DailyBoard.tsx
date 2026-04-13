@@ -134,7 +134,7 @@ const DailyBoard: React.FC = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                   >
-                    <Card className="border-none rounded-3xl group hover:shadow-2xl transition-all duration-500 cursor-grab active:cursor-grabbing overflow-hidden hover:-translate-y-1">
+                    <Card className="border border-border rounded-3xl group hover:shadow-2xl transition-all duration-500 cursor-grab active:cursor-grabbing overflow-hidden hover:-translate-y-1">
                       <CardContent className="p-6 space-y-5">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-4">
@@ -155,7 +155,7 @@ const DailyBoard: React.FC = () => {
                                 <MoreHorizontal className="w-5 h-5" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-2xl border border-white/10 shadow-2xl glass dark:glass-dark p-2 min-w-[180px]">
+                            <DropdownMenuContent align="end" className="rounded-2xl border border-border shadow-2xl bg-popover p-2 min-w-[180px]">
                               {column.id !== 'pending' && (
                                 <DropdownMenuItem onClick={() => updateStatus(apt.id, 'pending')} className="rounded-xl gap-3 py-2.5 font-bold">
                                   <Clock className="w-4 h-4 text-orange-500" /> Mover a Pendiente
