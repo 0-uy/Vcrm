@@ -25,6 +25,7 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { cn } from '../lib/utils';
 import { Clinic, ClinicStatus } from '../types';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -121,115 +122,155 @@ const SuperAdminView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Panel de Super Admin</h2>
-        <p className="text-muted-foreground">Gestión global de clínicas y suscripciones.</p>
+    <div className="space-y-8 pb-12 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Panel Superadmin
+          </h2>
+          <p className="text-muted-foreground font-medium">Gestión global de clínicas y suscripciones.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3 glass dark:glass-dark">
+            <ShieldAlert className="w-5 h-5 text-primary" />
+            <span className="text-xs font-bold uppercase tracking-widest">Acceso Restringido</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Total Clínicas</CardTitle>
+            <Building2 className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black">{clinics.length}</div>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">Registradas en el sistema</p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Clínicas Activas</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black">{clinics.filter(c => c.status === 'active').length}</div>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">Operando normalmente</p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Suspensiones</CardTitle>
+            <Ban className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black">{clinics.filter(c => c.status === 'suspended').length}</div>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">Cuentas con acceso restringido</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="relative flex-1 max-w-sm group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="Buscar clínica..." 
-            className="pl-9"
+            placeholder="Buscar clínica por nombre o ID..." 
+            className="pl-9 h-11 rounded-xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <Badge variant="outline" className="px-3 py-1">
-            Total Clínicas: {clinics.length}
-          </Badge>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredClinics.map((clinic) => (
-          <Card key={clinic.id} className={clinic.status === 'suspended' ? 'opacity-75 border-destructive/20' : ''}>
-            <CardHeader className="pb-2">
+          <Card key={clinic.id} className={cn(
+            "glass-card dark:glass-card-dark border-none shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
+            clinic.status === 'suspended' ? 'opacity-75' : ''
+          )}>
+            <CardHeader className="pb-4 border-b border-primary/5 bg-primary/5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <div className="w-12 h-12 rounded-2xl bg-background flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
                     <Building2 className="w-6 h-6" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{clinic.name}</CardTitle>
-                    <CardDescription className="text-xs">ID: {clinic.id}</CardDescription>
+                    <CardTitle className="text-lg font-bold">{clinic.name}</CardTitle>
+                    <CardDescription className="text-[10px] uppercase font-black tracking-widest">ID: {clinic.id.substring(0, 8)}</CardDescription>
                   </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="rounded-xl glass dark:glass-dark border-none shadow-2xl">
                     {clinic.status === 'suspended' ? (
-                      <DropdownMenuItem onClick={() => handleUpdateStatus(clinic.id, 'active')}>
-                        <Play className="w-4 h-4 mr-2 text-green-500" /> Activar Clínica
+                      <DropdownMenuItem onClick={() => handleUpdateStatus(clinic.id, 'active')} className="rounded-lg">
+                        <Play className="w-4 h-4 mr-2 text-emerald-500" /> Activar Clínica
                       </DropdownMenuItem>
                     ) : (
                       <DropdownMenuItem onClick={() => {
                         setSelectedClinic(clinic);
                         setIsSuspendDialogOpen(true);
-                      }}>
+                      }} className="rounded-lg">
                         <Ban className="w-4 h-4 mr-2 text-destructive" /> Suspender Clínica
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-primary/5" />
+                    <DropdownMenuItem className="rounded-lg">
                       <CreditCard className="w-4 h-4 mr-2" /> Gestionar Plan
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span>Estado:</span>
-                </div>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Estado</span>
                 {getStatusBadge(clinic.status)}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Usuarios</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-2xl bg-muted/30 dark:bg-white/5 border border-transparent hover:border-primary/5 transition-all">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Usuarios</p>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-blue-500" />
-                    <span className="font-bold">{clinic.userCount}</span>
+                    <span className="text-lg font-black">{clinic.userCount}</span>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Pacientes</p>
+                <div className="p-3 rounded-2xl bg-muted/30 dark:bg-white/5 border border-transparent hover:border-primary/5 transition-all">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Pacientes</p>
                   <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-green-500" />
-                    <span className="font-bold">{clinic.patientCount}</span>
+                    <Activity className="w-4 h-4 text-emerald-500" />
+                    <span className="text-lg font-black">{clinic.patientCount}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-2 space-y-2 border-t text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Plan:</span>
-                  <span className="font-medium capitalize">{clinic.plan}</span>
+              <div className="space-y-3 pt-4 border-t border-primary/5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-muted-foreground">Plan Actual</span>
+                  <Badge variant="outline" className="rounded-lg font-black uppercase text-[10px] border-primary/20 text-primary">
+                    {clinic.plan}
+                  </Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vencimiento:</span>
-                  <span className="font-medium">
-                    {format(clinic.expiresAt.toDate(), 'dd/MM/yyyy')}
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-muted-foreground">Vencimiento</span>
+                  <span className="text-xs font-black">
+                    {format(clinic.expiresAt.toDate(), 'dd MMM yyyy', { locale: es })}
                   </span>
                 </div>
               </div>
 
               {clinic.status === 'suspended' && clinic.suspendedReason && (
-                <div className="p-2 bg-destructive/10 rounded border border-destructive/20 text-[10px] text-destructive">
-                  <p className="font-bold mb-1 flex items-center gap-1">
-                    <ShieldAlert className="w-3 h-3" /> Razón de suspensión:
+                <div className="p-3 bg-destructive/5 rounded-2xl border border-destructive/10 text-[10px] text-destructive animate-in slide-in-from-top-2">
+                  <p className="font-black mb-1 flex items-center gap-1 uppercase tracking-widest">
+                    <ShieldAlert className="w-3.5 h-3.5" /> Razón de suspensión
                   </p>
-                  <p>{clinic.suspendedReason}</p>
+                  <p className="font-medium leading-relaxed">{clinic.suspendedReason}</p>
                 </div>
               )}
             </CardContent>

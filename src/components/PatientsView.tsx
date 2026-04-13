@@ -427,7 +427,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
           placeholder="Buscar por nombre de mascota o dueño..." 
-          className="pl-12 h-14 text-lg rounded-2xl glass border-none shadow-sm focus:shadow-md transition-all"
+          className="pl-12 h-14 text-lg rounded-2xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
@@ -436,7 +436,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
       {/* Patient List */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredPatients.length === 0 ? (
-          <div className="col-span-full py-24 text-center glass-card border-dashed rounded-3xl">
+          <div className="col-span-full py-24 text-center glass-card dark:glass-card-dark border-dashed rounded-3xl">
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-20">
               <Users className="w-10 h-10" />
             </div>
@@ -446,7 +446,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
           filteredPatients.map((patient) => (
             <Card 
               key={patient.id} 
-              className="glass-card border-none rounded-3xl overflow-hidden group cursor-pointer"
+              className="glass-card dark:glass-card-dark border-none rounded-3xl overflow-hidden group cursor-pointer transition-all duration-500 hover:-translate-y-1 shadow-lg"
               onClick={() => onSelectPatient(patient)}
             >
               <CardContent className="p-0">
@@ -490,14 +490,14 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
                   </div>
                   
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground bg-muted/30 p-2 rounded-xl border border-transparent group-hover:border-primary/5 transition-all">
+                    <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground bg-muted/30 dark:bg-white/5 p-2 rounded-xl border border-transparent group-hover:border-primary/5 transition-all">
                       <div className="w-7 h-7 rounded-lg bg-background flex items-center justify-center shadow-sm">
                         <Users className="w-3.5 h-3.5 text-primary/70" />
                       </div>
                       <span className="truncate">{patient.ownerName}</span>
                     </div>
                     {patient.ownerPhone && (
-                      <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground bg-muted/30 p-2 rounded-xl border border-transparent group-hover:border-primary/5 transition-all">
+                      <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground bg-muted/30 dark:bg-white/5 p-2 rounded-xl border border-transparent group-hover:border-primary/5 transition-all">
                         <div className="w-7 h-7 rounded-lg bg-background flex items-center justify-center shadow-sm">
                           <Phone className="w-3.5 h-3.5 text-primary/70" />
                         </div>

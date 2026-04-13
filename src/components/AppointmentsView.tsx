@@ -149,46 +149,49 @@ const AppointmentsView: React.FC = () => {
   const filteredAppointments = appointments.filter(a => isSameDay(a.date.toDate(), selectedDate));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Agenda de Turnos</h2>
-          <p className="text-muted-foreground">Gestiona las citas y visitas del día.</p>
+        <div className="space-y-1">
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Agenda de Turnos
+          </h2>
+          <p className="text-muted-foreground font-medium">Gestiona las citas y visitas del día.</p>
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" /> Nuevo Turno
+            <Button className="gap-2 rounded-xl h-12 px-6 shadow-lg shadow-primary/20 font-bold">
+              <Plus className="w-5 h-5" /> Nuevo Turno
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border-none shadow-2xl rounded-3xl">
             <DialogHeader>
-              <DialogTitle>Programar Turno</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Programar Turno</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="patient">Paciente *</Label>
+                <Label htmlFor="patient" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Paciente *</Label>
                 <Select 
                   value={newAppointment.patientId} 
                   onValueChange={v => setNewAppointment({...newAppointment, patientId: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm">
                     <SelectValue placeholder="Seleccionar paciente" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-none glass dark:glass-dark shadow-2xl">
                     {patients.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.name} ({p.ownerName})</SelectItem>
+                      <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.name} ({p.ownerName})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Fecha</Label>
+                  <Label htmlFor="date" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Fecha</Label>
                   <Input 
                     id="date" 
                     type="date" 
+                    className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm"
                     defaultValue={format(new Date(), 'yyyy-MM-dd')}
                     onChange={e => {
                       const date = new Date(e.target.value);
@@ -199,10 +202,11 @@ const AppointmentsView: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time">Hora</Label>
+                  <Label htmlFor="time" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Hora</Label>
                   <Input 
                     id="time" 
                     type="time" 
+                    className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm"
                     defaultValue={format(new Date(), 'HH:mm')}
                     onChange={e => {
                       const [h, m] = e.target.value.split(':').map(Number);
@@ -214,135 +218,143 @@ const AppointmentsView: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="reason">Motivo *</Label>
+                <Label htmlFor="reason" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Motivo *</Label>
                 <Input 
                   id="reason" 
                   placeholder="Ej: Vacunación, Control" 
+                  className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm"
                   value={newAppointment.reason || ''} 
                   onChange={e => setNewAppointment({...newAppointment, reason: e.target.value})}
                 />
               </div>
-              <div className="flex items-center space-x-2 pt-2">
+              <div className="flex items-center space-x-3 pt-2 bg-primary/5 p-4 rounded-2xl border border-primary/5">
                 <input 
                   type="checkbox" 
                   id="homeVisit" 
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  className="h-5 w-5 rounded-lg border-primary/20 text-primary focus:ring-primary bg-background"
                   checked={newAppointment.isHomeVisit || false}
                   onChange={e => setNewAppointment({...newAppointment, isHomeVisit: e.target.checked})}
                 />
-                <Label htmlFor="homeVisit" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                <Label htmlFor="homeVisit" className="text-sm font-bold leading-none cursor-pointer">
                   Consulta a domicilio
                 </Label>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleAddAppointment}>Programar</Button>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl h-11 px-6 font-bold">Cancelar</Button>
+              <Button onClick={handleAddAppointment} className="rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20">Programar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Date Navigation */}
-      <div className="flex items-center justify-between bg-card p-4 rounded-lg border">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
-            <ChevronLeft className="w-4 h-4" />
+      <div className="flex items-center justify-between glass dark:glass-dark p-4 rounded-[2rem] border-none shadow-xl">
+        <div className="flex items-center gap-6">
+          <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-primary/10" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+            <ChevronLeft className="w-5 h-5" />
           </Button>
-          <div className="text-center min-w-[200px]">
-            <p className="text-sm font-medium capitalize">
+          <div className="text-center min-w-[200px] space-y-0.5">
+            <p className="text-lg font-black tracking-tight capitalize">
               {format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
             </p>
             {isSameDay(selectedDate, new Date()) && (
-              <p className="text-xs text-primary font-bold">HOY</p>
+              <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] animate-pulse">HOY</p>
             )}
           </div>
-          <Button variant="outline" size="icon" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-            <ChevronRight className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-primary/10" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+            <ChevronRight className="w-5 h-5" />
           </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => setSelectedDate(new Date())}>
+        <Button variant="outline" size="sm" className="rounded-xl font-bold px-6 border-primary/10 hover:bg-primary/5" onClick={() => setSelectedDate(new Date())}>
           Ir a Hoy
         </Button>
       </div>
 
       {/* Appointments List */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {filteredAppointments.length === 0 ? (
-          <div className="py-20 text-center border rounded-lg border-dashed bg-muted/20">
-            <CalendarIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-            <p className="text-muted-foreground">No hay turnos programados para este día.</p>
+          <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] glass dark:glass-dark animate-in fade-in zoom-in duration-700">
+            <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CalendarIcon className="w-10 h-10 text-primary/30" />
+            </div>
+            <p className="text-muted-foreground font-bold text-lg">No hay turnos programados para este día.</p>
           </div>
         ) : (
           filteredAppointments.map((app) => (
             <Card key={app.id} className={cn(
-              "overflow-hidden transition-all",
+              "glass-card dark:glass-card-dark border-none rounded-[2rem] overflow-hidden transition-all duration-500 group hover:shadow-2xl hover:-translate-y-1",
               app.status === 'attended' && "opacity-60 grayscale-[0.5]"
             )}>
               <CardContent className="p-0">
-                <div className="flex flex-col md:flex-row md:items-center p-5 gap-4">
-                  <div className="flex items-center gap-4 md:w-32">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      <Clock className="w-5 h-5" />
+                <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
+                  <div className="flex items-center gap-4 md:w-36">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black shadow-inner group-hover:scale-110 transition-transform">
+                      <Clock className="w-6 h-6" />
                     </div>
-                    <span className="text-lg font-bold">{format(app.date.toDate(), 'HH:mm')}</span>
+                    <span className="text-2xl font-black tracking-tighter">{format(app.date.toDate(), 'HH:mm')}</span>
                   </div>
                   
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-lg">{app.patientName}</h3>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-black text-xl tracking-tight group-hover:text-primary transition-colors">{app.patientName}</h3>
                       {app.isHomeVisit && (
-                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20 gap-1">
+                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-none gap-1.5 rounded-lg px-3 py-1 font-black text-[10px] uppercase tracking-widest">
                           <Home className="w-3 h-3" /> Domicilio
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{app.reason}</p>
+                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">{app.reason}</p>
                     
                     {app.isHomeVisit && (
-                      <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                        <MapPin className="w-3 h-3 mt-0.5 shrink-0 text-primary" />
+                      <div className="mt-3 flex items-start gap-3 text-xs font-medium text-muted-foreground bg-muted/30 dark:bg-white/5 p-3 rounded-2xl border border-primary/5">
+                        <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-primary/50" />
                         <div>
                           {(() => {
                             const p = patients.find(p => p.id === app.patientId);
                             if (p?.ownerAddress) {
                               return (
                                 <>
-                                  <span className="font-medium text-foreground">{p.ownerAddress}</span>
-                                  {p.ownerNeighborhood && <span> • {p.ownerNeighborhood}</span>}
-                                  {p.addressNotes && <p className="italic mt-0.5">{p.addressNotes}</p>}
+                                  <span className="font-bold text-foreground">{p.ownerAddress}</span>
+                                  {p.ownerNeighborhood && <span className="opacity-70"> • {p.ownerNeighborhood}</span>}
+                                  {p.addressNotes && <p className="italic mt-1 opacity-60">"{p.addressNotes}"</p>}
                                 </>
                               );
                             }
-                            return <span className="italic">Sin dirección registrada</span>;
+                            return <span className="italic opacity-50">Sin dirección registrada</span>;
                           })()}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Badge variant={app.status === 'pending' ? 'outline' : app.status === 'attended' ? 'default' : 'destructive'}>
+                  <div className="flex items-center gap-4">
+                    <Badge className={cn(
+                      "font-black uppercase text-[10px] tracking-widest px-4 py-1.5 rounded-full border-none shadow-sm",
+                      app.status === 'pending' ? 'bg-orange-500/10 text-orange-600' : 
+                      app.status === 'attended' ? 'bg-emerald-500/10 text-emerald-600' : 
+                      'bg-destructive/10 text-destructive'
+                    )}>
                       {app.status === 'pending' ? 'Pendiente' : app.status === 'attended' ? 'Atendido' : 'Cancelado'}
                     </Badge>
                     
                     {app.status === 'pending' && (
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-green-500 hover:text-green-600 hover:bg-green-50"
+                          className="rounded-xl h-10 px-4 font-bold border-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/20 transition-all"
                           onClick={() => updateStatus(app.id, 'attended')}
                         >
-                          <CheckCircle2 className="w-4 h-4 mr-1" /> Atender
+                          <CheckCircle2 className="w-4 h-4 mr-2" /> Atender
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="rounded-xl h-10 px-4 font-bold border-destructive/10 text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all"
                           onClick={() => updateStatus(app.id, 'cancelled')}
                         >
-                          <XCircle className="w-4 h-4 mr-1" /> Cancelar
+                          <XCircle className="w-4 h-4 mr-2" /> Cancelar
                         </Button>
                       </div>
                     )}

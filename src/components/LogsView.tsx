@@ -100,77 +100,85 @@ const LogsView: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Bitácora Interna</h2>
-          <p className="text-muted-foreground">Notas rápidas, incidencias y recordatorios del equipo.</p>
+        <div className="space-y-1">
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Bitácora Interna
+          </h2>
+          <p className="text-muted-foreground font-medium">Notas rápidas, incidencias y recordatorios del equipo.</p>
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" /> Nueva Nota
+            <Button className="gap-2 rounded-xl h-12 px-6 shadow-lg shadow-primary/20 font-bold">
+              <Plus className="w-5 h-5" /> Nueva Nota
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border-none shadow-2xl rounded-3xl">
             <DialogHeader>
-              <DialogTitle>Agregar Nota a la Bitácora</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Agregar Nota a la Bitácora</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="content">Contenido de la nota</Label>
+                <Label htmlFor="content" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Contenido de la nota</Label>
                 <Textarea 
                   id="content" 
-                  placeholder="Escribe aquí incidencias, notas del día, etc." 
-                  className="min-h-[150px]"
+                  placeholder="Escribe aquí incidencias, notas del día, recordatorios..." 
+                  className="min-h-[180px] rounded-2xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all resize-none p-4"
                   value={newLog.content}
                   onChange={e => setNewLog({ content: e.target.value })}
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleAddLog}>Guardar Nota</Button>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl h-11 px-6 font-bold">Cancelar</Button>
+              <Button onClick={handleAddLog} className="rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20">Guardar Nota</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative group max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
           placeholder="Buscar en la bitácora..." 
-          className="pl-10"
+          className="pl-10 h-12 rounded-xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-6">
         {filteredLogs.length === 0 ? (
-          <div className="py-20 text-center border rounded-lg border-dashed">
-            <p className="text-muted-foreground">No hay notas registradas.</p>
+          <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] glass dark:glass-dark animate-in fade-in zoom-in duration-700">
+            <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ClipboardList className="w-10 h-10 text-primary/30" />
+            </div>
+            <p className="text-muted-foreground font-bold text-lg">No hay notas registradas aún.</p>
           </div>
         ) : (
           filteredLogs.map((log) => (
-            <Card key={log.id} className="group">
-              <CardContent className="p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                    <CalendarIcon className="w-3 h-3" />
+            <Card key={log.id} className="glass-card dark:glass-card-dark border-none rounded-3xl group hover:shadow-xl transition-all duration-500 overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 bg-primary/5 px-3 py-1.5 rounded-full">
+                    <CalendarIcon className="w-3.5 h-3.5 text-primary/50" />
                     {format(log.date.toDate(), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })}
                   </div>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 opacity-0 group-hover:opacity-100 transition-all"
                     onClick={() => handleDeleteLog(log.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{log.content}</p>
+                <div className="relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20 rounded-full" />
+                  <p className="text-sm font-medium whitespace-pre-wrap leading-relaxed pl-6 text-foreground/90">{log.content}</p>
+                </div>
               </CardContent>
             </Card>
           ))

@@ -162,7 +162,7 @@ const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="glass-card border-none overflow-hidden relative group">
+          <Card key={i} className="glass-card dark:glass-card-dark border-none overflow-hidden relative group transition-all duration-500 hover:-translate-y-1">
             <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform duration-500 group-hover:scale-110", stat.bg)} />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{stat.label}</CardTitle>
@@ -183,7 +183,7 @@ const Dashboard: React.FC = () => {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         {/* Activity Feed */}
-        <Card className="col-span-4 glass-card border-none">
+        <Card className="col-span-4 glass-card dark:glass-card-dark border-none shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between border-b border-primary/5 pb-4">
             <div>
               <CardTitle className="text-xl font-bold">Actividad Reciente</CardTitle>
@@ -249,7 +249,7 @@ const Dashboard: React.FC = () => {
         <div className="col-span-3 space-y-6">
           {/* Critical Alerts */}
           {(lowStockItems.length > 0 || overdueVaccines.length > 0 || inactivePatients.length > 0) && (
-            <Card className="border-none bg-destructive/5 shadow-inner">
+            <Card className="border-none bg-destructive/5 dark:bg-destructive/10 shadow-inner">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-black flex items-center gap-2 text-destructive uppercase tracking-widest">
                   <AlertTriangle className="w-4 h-4" /> Alertas Críticas
@@ -278,7 +278,7 @@ const Dashboard: React.FC = () => {
             </Card>
           )}
 
-          <Card className="glass-card border-none">
+          <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
             <CardHeader className="border-b border-primary/5 pb-4">
               <CardTitle className="text-xl font-bold">Agenda de Hoy</CardTitle>
               <CardDescription>

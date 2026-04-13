@@ -438,35 +438,41 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
   const totalPending = charges.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center gap-6">
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={onBack}
-          className="rounded-xl hover:bg-primary/5 hover:text-primary transition-all"
+          className="h-12 w-12 rounded-2xl glass dark:glass-dark hover:bg-primary/10 transition-all"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-6 h-6" />
         </Button>
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-4 mb-1">
             <h2 className="text-4xl font-black tracking-tight">{patient.name}</h2>
-            <Badge variant="secondary" className="rounded-lg bg-primary/5 text-primary border-none font-bold">
+            <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary px-3 py-1 rounded-full font-bold">
               {patient.species}
             </Badge>
           </div>
-          <p className="text-muted-foreground font-medium flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Dueño: <span className="text-foreground font-bold">{patient.ownerName}</span> 
+          <div className="text-muted-foreground font-medium flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-primary/70" />
+              Dueño: <span className="text-foreground font-bold">{patient.ownerName}</span> 
+            </div>
             {patient.ownerPhone && (
               <>
                 <span className="text-muted-foreground/30">•</span>
-                <span className="flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" /> {patient.ownerPhone}
+                <span className="flex items-center gap-1.5">
+                  <Phone className="w-4 h-4 text-primary/70" /> {patient.ownerPhone}
                 </span>
               </>
             )}
-          </p>
+            <span className="text-muted-foreground/30">•</span>
+            <span className="flex items-center gap-1.5">
+              <Dog className="w-4 h-4 text-primary/70" /> {patient.race || 'Sin raza'}
+            </span>
+          </div>
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -1007,7 +1013,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         {/* Clinical History Timeline */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="history" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto p-1 bg-primary/5 rounded-2xl border border-primary/5">
+            <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto p-1 bg-muted/50 dark:bg-white/5 rounded-2xl border border-primary/5 glass dark:glass-dark">
               <TabsTrigger value="history" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Historial</TabsTrigger>
               <TabsTrigger value="soap" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">SOAP</TabsTrigger>
               <TabsTrigger value="prescriptions" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Recetas</TabsTrigger>
@@ -1050,7 +1056,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </div>
-                        <Card className="glass-card border-none rounded-2xl overflow-hidden">
+                        <Card className="glass-card dark:glass-card-dark border-none rounded-2xl overflow-hidden shadow-lg">
                           <CardContent className="p-5">
                             <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground/80">{event.description}</p>
                             {event.nextDate && (
@@ -1079,14 +1085,14 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </div>
                 ) : (
                   soapNotes.map((note) => (
-                    <Card key={note.id} className="glass-card border-none rounded-3xl overflow-hidden">
+                    <Card key={note.id} className="glass-card dark:glass-card-dark border-none rounded-3xl overflow-hidden shadow-lg">
                       <CardHeader className="pb-4 border-b border-primary/5 bg-primary/5">
                         <div className="flex justify-between items-center">
                           <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary">
                             <ClipboardType className="w-4 h-4" />
                             Nota SOAP
                           </CardTitle>
-                          <Badge variant="secondary" className="rounded-lg font-bold bg-background shadow-sm border-none">
+                          <Badge variant="secondary" className="rounded-lg font-bold bg-background dark:bg-white/10 shadow-sm border-none">
                             {format(note.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
                           </Badge>
                         </div>
@@ -1095,19 +1101,19 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Subjective (S)</p>
-                            <div className="bg-muted/30 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.subjective || 'N/A'}</div>
+                            <div className="bg-muted/30 dark:bg-white/5 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.subjective || 'N/A'}</div>
                           </div>
                           <div className="space-y-2">
                             <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Objective (O)</p>
-                            <div className="bg-muted/30 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.objective || 'N/A'}</div>
+                            <div className="bg-muted/30 dark:bg-white/5 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.objective || 'N/A'}</div>
                           </div>
                           <div className="space-y-2">
                             <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Assessment (A)</p>
-                            <div className="bg-primary/5 p-4 rounded-2xl text-sm font-bold border border-primary/10 text-primary">{note.assessment}</div>
+                            <div className="bg-primary/10 dark:bg-primary/20 p-4 rounded-2xl text-sm font-bold border border-primary/10 text-primary">{note.assessment}</div>
                           </div>
                           <div className="space-y-2">
                             <p className="font-black text-[10px] text-muted-foreground uppercase tracking-widest">Plan (P)</p>
-                            <div className="bg-muted/30 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.plan || 'N/A'}</div>
+                            <div className="bg-muted/30 dark:bg-white/5 p-4 rounded-2xl text-sm font-medium border border-primary/5">{note.plan || 'N/A'}</div>
                           </div>
                         </div>
                       </CardContent>
@@ -1128,11 +1134,11 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </div>
                 ) : (
                   prescriptions.map((p) => (
-                    <Card key={p.id} className="glass-card border-none rounded-3xl overflow-hidden group">
+                    <Card key={p.id} className="glass-card dark:glass-card-dark border-none rounded-3xl overflow-hidden group shadow-lg hover:shadow-xl transition-all duration-500">
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start mb-6">
                           <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+                            <div className="w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
                               <Pill className="w-7 h-7" />
                             </div>
                             <div>

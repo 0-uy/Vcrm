@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
+import { cn } from '../lib/utils';
 import { InventoryItem } from '../types';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -131,106 +132,125 @@ const InventoryView: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Inventario</h2>
-          <p className="text-muted-foreground">Gestiona medicamentos, insumos y stock de tu clínica.</p>
+        <div className="space-y-1">
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Inventario
+          </h2>
+          <p className="text-muted-foreground font-medium">Gestiona medicamentos, insumos y stock de tu clínica.</p>
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" /> Nuevo Producto
+            <Button className="gap-2 rounded-xl h-12 px-6 shadow-lg shadow-primary/20 font-bold">
+              <Plus className="w-5 h-5" /> Nuevo Producto
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] glass dark:glass-dark border-none shadow-2xl rounded-3xl">
             <DialogHeader>
-              <DialogTitle>Agregar al Inventario</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Agregar al Inventario</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre del Producto</Label>
+                <Label htmlFor="name" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Nombre del Producto</Label>
                 <Input 
                   id="name" 
                   placeholder="Ej: Amoxicilina 500mg" 
+                  className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
                   value={newItem.name}
                   onChange={e => setNewItem({...newItem, name: e.target.value})}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="stock">Stock Inicial</Label>
+                  <Label htmlFor="stock" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Stock Inicial</Label>
                   <Input 
                     id="stock" 
                     type="number" 
+                    className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
                     value={newItem.stock}
                     onChange={e => setNewItem({...newItem, stock: parseInt(e.target.value) || 0})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="minStock">Stock Mínimo</Label>
+                  <Label htmlFor="minStock" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Stock Mínimo</Label>
                   <Input 
                     id="minStock" 
                     type="number" 
+                    className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
                     value={newItem.minStock}
                     onChange={e => setNewItem({...newItem, minStock: parseInt(e.target.value) || 0})}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unit">Unidad</Label>
+                <Label htmlFor="unit" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Unidad</Label>
                 <Input 
                   id="unit" 
                   placeholder="Ej: unidades, frascos, cajas" 
+                  className="rounded-xl h-11 glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
                   value={newItem.unit}
                   onChange={e => setNewItem({...newItem, unit: e.target.value})}
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleAddItem}>Guardar Producto</Button>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl h-11 px-6 font-bold">Cancelar</Button>
+              <Button onClick={handleAddItem} className="rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20">Guardar Producto</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative group">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
-          placeholder="Buscar productos..." 
-          className="pl-10"
+          placeholder="Buscar productos por nombre..." 
+          className="pl-10 h-12 rounded-xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all max-w-md"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item) => (
-          <Card key={item.id} className={item.stock <= item.minStock ? "border-destructive/50 bg-destructive/5" : ""}>
+          <Card key={item.id} className={cn(
+            "glass-card dark:glass-card-dark border-none rounded-3xl shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
+            item.stock <= item.minStock ? "ring-2 ring-destructive/20" : ""
+          )}>
             <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-bold text-lg">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground capitalize">{item.unit}</p>
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform",
+                    item.stock <= item.minStock ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+                  )}>
+                    <Package className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg leading-tight">{item.name}</h3>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-0.5">{item.unit}</p>
+                  </div>
                 </div>
                 {item.stock <= item.minStock && (
-                  <Badge variant="destructive" className="gap-1">
+                  <Badge variant="destructive" className="gap-1 rounded-full px-3 py-0.5 font-black uppercase text-[10px] animate-pulse">
                     <AlertTriangle className="w-3 h-3" /> Stock Bajo
                   </Badge>
                 )}
               </div>
 
-              <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg mb-4">
-                <div className="text-center flex-1">
-                  <p className="text-xs text-muted-foreground uppercase font-bold">Actual</p>
-                  <p className="text-2xl font-bold">{item.stock}</p>
+              <div className="grid grid-cols-2 gap-4 bg-muted/30 dark:bg-white/5 p-4 rounded-2xl mb-6 border border-primary/5">
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Actual</p>
+                  <p className={cn(
+                    "text-3xl font-black",
+                    item.stock <= item.minStock ? "text-destructive" : "text-foreground"
+                  )}>{item.stock}</p>
                 </div>
-                <div className="w-px h-8 bg-border" />
-                <div className="text-center flex-1">
-                  <p className="text-xs text-muted-foreground uppercase font-bold">Mínimo</p>
-                  <p className="text-2xl font-bold text-muted-foreground">{item.minStock}</p>
+                <div className="text-center border-l border-primary/5">
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Mínimo</p>
+                  <p className="text-3xl font-black text-muted-foreground/50">{item.minStock}</p>
                 </div>
               </div>
 
@@ -238,7 +258,7 @@ const InventoryView: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="flex-1 gap-1"
+                  className="flex-1 gap-2 rounded-xl h-10 font-bold border-primary/10 hover:bg-destructive/5 hover:text-destructive hover:border-destructive/20 transition-all"
                   onClick={() => handleUpdateStock(item, -1)}
                 >
                   <ArrowDownCircle className="w-4 h-4" /> Salida
@@ -246,7 +266,7 @@ const InventoryView: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="flex-1 gap-1"
+                  className="flex-1 gap-2 rounded-xl h-10 font-bold border-primary/10 hover:bg-emerald-500/5 hover:text-emerald-500 hover:border-emerald-500/20 transition-all"
                   onClick={() => handleUpdateStock(item, 1)}
                 >
                   <ArrowUpCircle className="w-4 h-4" /> Entrada
@@ -254,7 +274,7 @@ const InventoryView: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="text-muted-foreground hover:text-destructive"
+                  className="h-10 w-10 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all"
                   onClick={() => handleDeleteItem(item.id, item.name)}
                 >
                   <Trash2 className="w-4 h-4" />
