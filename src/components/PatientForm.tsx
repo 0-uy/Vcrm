@@ -33,10 +33,11 @@ interface PatientFormProps {
 }
 
 const PatientForm: React.FC<PatientFormProps> = ({ initialData, onSubmit, onCancel, title }) => {
-  const [formData, setFormData] = useState<Partial<Patient>>(initialData || {
+  const [formData, setFormData] = useState<Partial<Patient>>({
     species: 'Perro',
     sex: 'no_especificado',
     isNeutered: 'no_informado',
+    ...initialData
   });
 
   const [attachments, setAttachments] = useState<any[]>([]);

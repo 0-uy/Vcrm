@@ -137,6 +137,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
 
     const q = query(
       collection(db, 'patients', patient.id, 'history'),
+      where('clinicId', '==', profile.clinicId),
       orderBy('date', 'desc')
     );
 
@@ -150,6 +151,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     const qCharges = query(
       collection(db, 'charges'),
       where('patientId', '==', patient.id),
+      where('clinicId', '==', profile.clinicId),
       orderBy('date', 'desc')
     );
 
@@ -163,6 +165,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     const qPrescriptions = query(
       collection(db, 'prescriptions'),
       where('patientId', '==', patient.id),
+      where('clinicId', '==', profile.clinicId),
       orderBy('date', 'desc')
     );
     const unsubscribePrescriptions = onSnapshot(qPrescriptions, (snapshot) => {
@@ -175,6 +178,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     const qSOAP = query(
       collection(db, 'soap_notes'),
       where('patientId', '==', patient.id),
+      where('clinicId', '==', profile.clinicId),
       orderBy('date', 'desc')
     );
     const unsubscribeSOAP = onSnapshot(qSOAP, (snapshot) => {
@@ -187,6 +191,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     const qAttachments = query(
       collection(db, 'attachments'),
       where('patientId', '==', patient.id),
+      where('clinicId', '==', profile.clinicId),
       orderBy('date', 'desc')
     );
     const unsubscribeAttachments = onSnapshot(qAttachments, (snapshot) => {
