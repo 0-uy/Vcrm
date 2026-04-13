@@ -73,7 +73,7 @@ export default function App() {
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-destructive/10 rounded-full blur-[120px]" />
         </div>
 
-        <Card className="max-w-md w-full glass dark:glass-dark border-none shadow-2xl rounded-[2.5rem] overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <Card className="max-w-md w-full border-none shadow-2xl rounded-[2.5rem] overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
           <CardContent className="p-10 text-center space-y-8">
             <div className="w-24 h-24 bg-destructive/10 text-destructive rounded-[2rem] flex items-center justify-center mx-auto shadow-inner rotate-3">
               <ShieldAlert className="w-12 h-12" />

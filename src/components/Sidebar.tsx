@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 glass dark:glass-dark border-r border-primary/5 transition-transform duration-300 ease-in-out md:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-64 bg-sidebar border-r border-border transition-transform duration-300 ease-in-out md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
@@ -117,9 +117,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
           </div>
 
           <div className="mt-auto p-6 space-y-6">
-            <Separator className="bg-primary/10" />
-            <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-primary/5 border border-primary/10 glass dark:glass-dark">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-black text-primary border border-primary/10">
+            <Separator className="bg-border" />
+            <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-muted/50 border border-border">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-black text-primary border border-primary/20">
                 {profile?.displayName?.charAt(0) || profile?.email.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">

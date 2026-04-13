@@ -131,7 +131,7 @@ const SuperAdminView: React.FC = () => {
           <p className="text-muted-foreground font-medium">Gestión global de clínicas y suscripciones.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3 glass dark:glass-dark">
+          <div className="p-3 rounded-2xl bg-muted/50 border border-border flex items-center gap-3">
             <ShieldAlert className="w-5 h-5 text-primary" />
             <span className="text-xs font-bold uppercase tracking-widest">Acceso Restringido</span>
           </div>
@@ -139,7 +139,7 @@ const SuperAdminView: React.FC = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
+        <Card className="border-none shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Total Clínicas</CardTitle>
             <Building2 className="h-4 w-4 text-primary" />
@@ -149,7 +149,7 @@ const SuperAdminView: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1 font-medium">Registradas en el sistema</p>
           </CardContent>
         </Card>
-        <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
+        <Card className="border-none shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Clínicas Activas</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -159,7 +159,7 @@ const SuperAdminView: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1 font-medium">Operando normalmente</p>
           </CardContent>
         </Card>
-        <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
+        <Card className="border-none shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Suspensiones</CardTitle>
             <Ban className="h-4 w-4 text-destructive" />
@@ -176,7 +176,7 @@ const SuperAdminView: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input 
             placeholder="Buscar clínica por nombre o ID..." 
-            className="pl-9 h-11 rounded-xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
+            className="pl-9 h-11 rounded-xl border-border bg-card shadow-sm focus:shadow-md transition-all"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
@@ -186,7 +186,7 @@ const SuperAdminView: React.FC = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredClinics.map((clinic) => (
           <Card key={clinic.id} className={cn(
-            "glass-card dark:glass-card-dark border-none shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
+            "border-none shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
             clinic.status === 'suspended' ? 'opacity-75' : ''
           )}>
             <CardHeader className="pb-4 border-b border-primary/5 bg-primary/5">
@@ -206,7 +206,7 @@ const SuperAdminView: React.FC = () => {
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-xl glass dark:glass-dark border-none shadow-2xl">
+                  <DropdownMenuContent align="end" className="rounded-xl glass dark:glass-dark border border-white/10 shadow-2xl">
                     {clinic.status === 'suspended' ? (
                       <DropdownMenuItem onClick={() => handleUpdateStatus(clinic.id, 'active')} className="rounded-lg">
                         <Play className="w-4 h-4 mr-2 text-emerald-500" /> Activar Clínica
@@ -279,7 +279,7 @@ const SuperAdminView: React.FC = () => {
       </div>
 
       <Dialog open={isSuspendDialogOpen} onOpenChange={setIsSuspendDialogOpen}>
-        <DialogContent>
+        <DialogContent className="glass dark:glass-dark border border-white/10 shadow-2xl">
           <DialogHeader>
             <DialogTitle>Suspender Clínica</DialogTitle>
             <DialogDescription>

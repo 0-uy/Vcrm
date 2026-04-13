@@ -179,7 +179,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
               <Plus className="w-4 h-4" /> Nuevo Paciente
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px] glass border-none shadow-2xl">
+          <DialogContent className="sm:max-w-[550px] glass dark:glass-dark border border-white/10 shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Agregar Nuevo Paciente</DialogTitle>
             </DialogHeader>
@@ -302,7 +302,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
         </Dialog>
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[550px] glass border-none shadow-2xl">
+          <DialogContent className="sm:max-w-[550px] glass dark:glass-dark border border-white/10 shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Editar Paciente</DialogTitle>
             </DialogHeader>
@@ -427,7 +427,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
           placeholder="Buscar por nombre de mascota o dueño..." 
-          className="pl-12 h-14 text-lg rounded-2xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
+          className="pl-12 h-14 text-lg rounded-2xl border-border bg-card shadow-sm focus:shadow-md transition-all"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
@@ -436,7 +436,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
       {/* Patient List */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredPatients.length === 0 ? (
-          <div className="col-span-full py-24 text-center glass-card dark:glass-card-dark border-dashed rounded-3xl">
+          <div className="col-span-full py-24 text-center bg-card border border-dashed border-border rounded-3xl">
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-20">
               <Users className="w-10 h-10" />
             </div>
@@ -446,7 +446,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
           filteredPatients.map((patient) => (
             <Card 
               key={patient.id} 
-              className="glass-card dark:glass-card-dark border-none rounded-3xl overflow-hidden group cursor-pointer transition-all duration-500 hover:-translate-y-1 shadow-lg"
+              className="border-none rounded-3xl overflow-hidden group cursor-pointer transition-all duration-500 hover:-translate-y-1 shadow-lg"
               onClick={() => onSelectPatient(patient)}
             >
               <CardContent className="p-0">

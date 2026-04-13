@@ -164,7 +164,7 @@ const AppointmentsView: React.FC = () => {
               <Plus className="w-5 h-5" /> Nuevo Turno
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border-none shadow-2xl rounded-3xl">
+          <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border border-white/10 shadow-2xl rounded-3xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Programar Turno</DialogTitle>
             </DialogHeader>
@@ -249,7 +249,7 @@ const AppointmentsView: React.FC = () => {
       </div>
 
       {/* Date Navigation */}
-      <div className="flex items-center justify-between glass dark:glass-dark p-4 rounded-[2rem] border-none shadow-xl">
+      <div className="flex items-center justify-between bg-card p-4 rounded-[2rem] border border-border shadow-xl">
         <div className="flex items-center gap-6">
           <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-primary/10" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
             <ChevronLeft className="w-5 h-5" />
@@ -274,7 +274,7 @@ const AppointmentsView: React.FC = () => {
       {/* Appointments List */}
       <div className="space-y-6">
         {filteredAppointments.length === 0 ? (
-          <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] glass dark:glass-dark animate-in fade-in zoom-in duration-700">
+          <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] bg-card animate-in fade-in zoom-in duration-700">
             <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
               <CalendarIcon className="w-10 h-10 text-primary/30" />
             </div>
@@ -283,7 +283,7 @@ const AppointmentsView: React.FC = () => {
         ) : (
           filteredAppointments.map((app) => (
             <Card key={app.id} className={cn(
-              "glass-card dark:glass-card-dark border-none rounded-[2rem] overflow-hidden transition-all duration-500 group hover:shadow-2xl hover:-translate-y-1",
+              "border-none rounded-[2rem] overflow-hidden transition-all duration-500 group hover:shadow-2xl hover:-translate-y-1",
               app.status === 'attended' && "opacity-60 grayscale-[0.5]"
             )}>
               <CardContent className="p-0">

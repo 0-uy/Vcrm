@@ -147,7 +147,7 @@ const InventoryView: React.FC = () => {
               <Plus className="w-5 h-5" /> Nuevo Producto
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] glass dark:glass-dark border-none shadow-2xl rounded-3xl">
+          <DialogContent className="sm:max-w-[425px] glass dark:glass-dark border border-white/10 shadow-2xl rounded-3xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Agregar al Inventario</DialogTitle>
             </DialogHeader>
@@ -207,7 +207,7 @@ const InventoryView: React.FC = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
           placeholder="Buscar productos por nombre..." 
-          className="pl-10 h-12 rounded-xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all max-w-md"
+          className="pl-10 h-12 rounded-xl border-border bg-card shadow-sm focus:shadow-md transition-all max-w-md"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
@@ -216,7 +216,7 @@ const InventoryView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item) => (
           <Card key={item.id} className={cn(
-            "glass-card dark:glass-card-dark border-none rounded-3xl shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
+            "border-none rounded-3xl shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
             item.stock <= item.minStock ? "ring-2 ring-destructive/20" : ""
           )}>
             <CardContent className="p-6">

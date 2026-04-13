@@ -162,7 +162,7 @@ const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="glass-card dark:glass-card-dark border-none overflow-hidden relative group transition-all duration-500 hover:-translate-y-1">
+          <Card key={i} className="border-none overflow-hidden relative group transition-all duration-500 hover:-translate-y-1">
             <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform duration-500 group-hover:scale-110", stat.bg)} />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{stat.label}</CardTitle>
@@ -183,7 +183,7 @@ const Dashboard: React.FC = () => {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         {/* Activity Feed */}
-        <Card className="col-span-4 glass-card dark:glass-card-dark border-none shadow-xl">
+        <Card className="col-span-4 border-none shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between border-b border-primary/5 pb-4">
             <div>
               <CardTitle className="text-xl font-bold">Actividad Reciente</CardTitle>
@@ -278,7 +278,7 @@ const Dashboard: React.FC = () => {
             </Card>
           )}
 
-          <Card className="glass-card dark:glass-card-dark border-none shadow-xl">
+          <Card className="border-none shadow-xl">
             <CardHeader className="border-b border-primary/5 pb-4">
               <CardTitle className="text-xl font-bold">Agenda de Hoy</CardTitle>
               <CardDescription>

@@ -444,7 +444,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
           variant="ghost" 
           size="icon" 
           onClick={onBack}
-          className="h-12 w-12 rounded-2xl glass dark:glass-dark hover:bg-primary/10 transition-all"
+          className="h-12 w-12 rounded-2xl bg-muted/50 hover:bg-primary/10 transition-all"
         >
           <ArrowLeft className="w-6 h-6" />
         </Button>
@@ -482,7 +482,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <Edit2 className="w-4 h-4" /> Editar Perfil
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] glass border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[550px] glass dark:glass-dark border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold">Editar Paciente</DialogTitle>
               </DialogHeader>
@@ -612,7 +612,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <Plus className="w-4 h-4" /> Nuevo Evento
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] glass border-none shadow-2xl">
+            <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border border-white/10 shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold">Agregar Evento Clínico</DialogTitle>
               </DialogHeader>
@@ -683,7 +683,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <DollarSign className="w-4 h-4" /> Nuevo Cargo
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px] glass border-none shadow-2xl">
+            <DialogContent className="sm:max-w-[400px] glass dark:glass-dark border border-white/10 shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold">Registrar Cargo</DialogTitle>
               </DialogHeader>
@@ -748,7 +748,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <Pill className="w-4 h-4" /> Receta
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border border-white/10 shadow-2xl">
               <DialogHeader>
                 <DialogTitle>Nueva Receta</DialogTitle>
               </DialogHeader>
@@ -814,7 +814,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <ClipboardType className="w-4 h-4" /> Nota SOAP
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[600px] glass dark:glass-dark border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Nota Clínica SOAP</DialogTitle>
               </DialogHeader>
@@ -869,7 +869,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <Paperclip className="w-4 h-4" /> Adjunto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-[400px] glass dark:glass-dark border border-white/10 shadow-2xl">
               <DialogHeader>
                 <DialogTitle>Agregar Adjunto</DialogTitle>
               </DialogHeader>
@@ -930,7 +930,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Patient Info Card */}
         <div className="space-y-6">
-          <Card className="glass-card border-none rounded-3xl overflow-hidden">
+          <Card className="border-none rounded-3xl overflow-hidden">
             <CardHeader className="border-b border-primary/5 bg-primary/5">
               <CardTitle className="text-xl font-bold flex items-center gap-2">
                 <Dog className="w-5 h-5 text-primary" /> Información General
@@ -1056,7 +1056,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </div>
-                        <Card className="glass-card dark:glass-card-dark border-none rounded-2xl overflow-hidden shadow-lg">
+                        <Card className="border-none rounded-2xl overflow-hidden shadow-lg">
                           <CardContent className="p-5">
                             <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground/80">{event.description}</p>
                             {event.nextDate && (
@@ -1085,7 +1085,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </div>
                 ) : (
                   soapNotes.map((note) => (
-                    <Card key={note.id} className="glass-card dark:glass-card-dark border-none rounded-3xl overflow-hidden shadow-lg">
+                    <Card key={note.id} className="border-none rounded-3xl overflow-hidden shadow-lg">
                       <CardHeader className="pb-4 border-b border-primary/5 bg-primary/5">
                         <div className="flex justify-between items-center">
                           <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary">
@@ -1134,7 +1134,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </div>
                 ) : (
                   prescriptions.map((p) => (
-                    <Card key={p.id} className="glass-card dark:glass-card-dark border-none rounded-3xl overflow-hidden group shadow-lg hover:shadow-xl transition-all duration-500">
+                    <Card key={p.id} className="border-none rounded-3xl overflow-hidden group shadow-lg hover:shadow-xl transition-all duration-500">
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start mb-6">
                           <div className="flex items-center gap-4">
@@ -1190,7 +1190,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </div>
                 ) : (
                   attachments.map((att) => (
-                    <Card key={att.id} className="glass-card border-none rounded-3xl overflow-hidden group hover:shadow-xl transition-all">
+                    <Card key={att.id} className="border-none rounded-3xl overflow-hidden group hover:shadow-xl transition-all">
                       <CardContent className="p-0">
                         <div className="flex items-center p-5 gap-4">
                           <div className={cn(
@@ -1240,7 +1240,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   </div>
                 ) : (
                   vaccines.map((v) => (
-                    <Card key={v.id} className="glass-card border-none rounded-2xl overflow-hidden">
+                    <Card key={v.id} className="border-none rounded-2xl overflow-hidden">
                       <CardContent className="p-5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-green-500/10 text-green-600 flex items-center justify-center shadow-inner">
@@ -1277,7 +1277,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
             <TabsContent value="billing" className="mt-8">
               <div className="space-y-8">
                 <div className="grid grid-cols-2 gap-6">
-                  <Card className="glass-card border-none rounded-3xl overflow-hidden bg-emerald-500/5 border-emerald-500/10">
+                  <Card className="border-none rounded-3xl overflow-hidden bg-emerald-500/5 border-emerald-500/10">
                     <CardContent className="p-6 flex items-center gap-5">
                       <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-inner">
                         <CreditCard className="w-7 h-7" />
@@ -1288,7 +1288,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="glass-card border-none rounded-3xl overflow-hidden bg-orange-500/5 border-orange-500/10">
+                  <Card className="border-none rounded-3xl overflow-hidden bg-orange-500/5 border-orange-500/10">
                     <CardContent className="p-6 flex items-center gap-5">
                       <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-600 flex items-center justify-center shadow-inner">
                         <Receipt className="w-7 h-7" />
@@ -1311,7 +1311,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                     </div>
                   ) : (
                     charges.map((charge) => (
-                      <Card key={charge.id} className="glass-card border-none rounded-2xl overflow-hidden group hover:shadow-md transition-all">
+                      <Card key={charge.id} className="border-none rounded-2xl overflow-hidden group hover:shadow-md transition-all">
                         <CardContent className="p-5 flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className={cn(

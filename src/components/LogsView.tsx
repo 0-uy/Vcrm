@@ -115,7 +115,7 @@ const LogsView: React.FC = () => {
               <Plus className="w-5 h-5" /> Nueva Nota
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border-none shadow-2xl rounded-3xl">
+          <DialogContent className="sm:max-w-[500px] glass dark:glass-dark border border-white/10 shadow-2xl rounded-3xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Agregar Nota a la Bitácora</DialogTitle>
             </DialogHeader>
@@ -125,7 +125,7 @@ const LogsView: React.FC = () => {
                 <Textarea 
                   id="content" 
                   placeholder="Escribe aquí incidencias, notas del día, recordatorios..." 
-                  className="min-h-[180px] rounded-2xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all resize-none p-4"
+                  className="min-h-[180px] rounded-2xl border-border bg-card shadow-sm focus:shadow-md transition-all resize-none p-4"
                   value={newLog.content}
                   onChange={e => setNewLog({ content: e.target.value })}
                 />
@@ -143,7 +143,7 @@ const LogsView: React.FC = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
           placeholder="Buscar en la bitácora..." 
-          className="pl-10 h-12 rounded-xl glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
+          className="pl-10 h-12 rounded-xl border-border bg-card shadow-sm focus:shadow-md transition-all"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
@@ -151,7 +151,7 @@ const LogsView: React.FC = () => {
 
       <div className="grid gap-6">
         {filteredLogs.length === 0 ? (
-          <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] glass dark:glass-dark animate-in fade-in zoom-in duration-700">
+          <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] bg-card animate-in fade-in zoom-in duration-700">
             <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
               <ClipboardList className="w-10 h-10 text-primary/30" />
             </div>
@@ -159,7 +159,7 @@ const LogsView: React.FC = () => {
           </div>
         ) : (
           filteredLogs.map((log) => (
-            <Card key={log.id} className="glass-card dark:glass-card-dark border-none rounded-3xl group hover:shadow-xl transition-all duration-500 overflow-hidden">
+            <Card key={log.id} className="border-none rounded-3xl group hover:shadow-xl transition-all duration-500 overflow-hidden">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 bg-primary/5 px-3 py-1.5 rounded-full">

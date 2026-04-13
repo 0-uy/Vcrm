@@ -257,7 +257,7 @@ const LoginView: React.FC = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <Card className="w-full max-w-[420px] glass dark:glass-dark border-none shadow-2xl rounded-[2.5rem] overflow-hidden animate-in fade-in zoom-in duration-700">
+      <Card className="w-full max-w-[420px] border-none shadow-2xl rounded-[2.5rem] overflow-hidden animate-in fade-in zoom-in duration-700">
         <CardHeader className="space-y-2 text-center pt-10 pb-6">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/30 rotate-3 animate-in slide-in-from-top-4 duration-1000">
@@ -278,7 +278,7 @@ const LoginView: React.FC = () => {
                   id="name" 
                   placeholder="Dr. Juan Pérez" 
                   required 
-                  className="rounded-xl h-12 glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
+                  className="rounded-xl h-12 border-border bg-card shadow-sm focus:shadow-md transition-all"
                   value={displayName}
                   onChange={e => setDisplayName(e.target.value)}
                 />
@@ -291,7 +291,7 @@ const LoginView: React.FC = () => {
                 type="email" 
                 placeholder="doctor@clinica.com" 
                 required 
-                className="rounded-xl h-12 glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
+                className="rounded-xl h-12 border-border bg-card shadow-sm focus:shadow-md transition-all"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
@@ -303,7 +303,7 @@ const LoginView: React.FC = () => {
                 type="password" 
                 placeholder="••••••••"
                 required 
-                className="rounded-xl h-12 glass dark:glass-dark border-none shadow-sm focus:shadow-md transition-all"
+                className="rounded-xl h-12 border-border bg-card shadow-sm focus:shadow-md transition-all"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
@@ -320,7 +320,7 @@ const LoginView: React.FC = () => {
                 <span className="w-full border-t border-primary/5" />
               </div>
               <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
-                <span className="bg-background/50 backdrop-blur-sm px-4 text-muted-foreground">O continuar con</span>
+                <span className="bg-background px-4 text-muted-foreground">O continuar con</span>
               </div>
             </div>
 

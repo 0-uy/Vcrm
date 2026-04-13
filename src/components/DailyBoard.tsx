@@ -99,7 +99,7 @@ const DailyBoard: React.FC = () => {
           <p className="text-muted-foreground font-medium">Gestión operativa de pacientes para hoy, {format(new Date(), "d 'de' MMMM", { locale: es })}.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 flex items-center gap-3 glass dark:glass-dark">
+          <div className="bg-muted/50 px-4 py-2 rounded-2xl border border-border flex items-center gap-3">
             <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total Hoy</span>
             <Badge className="bg-primary text-primary-foreground rounded-lg font-black shadow-lg shadow-primary/20">
               {appointments.length}
@@ -110,7 +110,7 @@ const DailyBoard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full min-h-[600px]">
         {columns.map((column) => (
-          <div key={column.id} className="flex flex-col gap-6 bg-primary/5 dark:bg-white/5 rounded-[2.5rem] p-6 border border-primary/5 glass dark:glass-dark shadow-inner">
+          <div key={column.id} className="flex flex-col gap-6 bg-muted/30 rounded-[2.5rem] p-6 border border-border shadow-inner">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-3">
                 <div className={cn("p-3 rounded-2xl shadow-lg transition-transform hover:scale-110", column.color)}>
@@ -134,7 +134,7 @@ const DailyBoard: React.FC = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                   >
-                    <Card className="glass-card dark:glass-card-dark border-none rounded-3xl group hover:shadow-2xl transition-all duration-500 cursor-grab active:cursor-grabbing overflow-hidden hover:-translate-y-1">
+                    <Card className="border-none rounded-3xl group hover:shadow-2xl transition-all duration-500 cursor-grab active:cursor-grabbing overflow-hidden hover:-translate-y-1">
                       <CardContent className="p-6 space-y-5">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-4">
@@ -155,7 +155,7 @@ const DailyBoard: React.FC = () => {
                                 <MoreHorizontal className="w-5 h-5" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl glass dark:glass-dark p-2 min-w-[180px]">
+                            <DropdownMenuContent align="end" className="rounded-2xl border border-white/10 shadow-2xl glass dark:glass-dark p-2 min-w-[180px]">
                               {column.id !== 'pending' && (
                                 <DropdownMenuItem onClick={() => updateStatus(apt.id, 'pending')} className="rounded-xl gap-3 py-2.5 font-bold">
                                   <Clock className="w-4 h-4 text-orange-500" /> Mover a Pendiente
