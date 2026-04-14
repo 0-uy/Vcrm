@@ -11,13 +11,25 @@ import {
   Activity,
   AlertTriangle,
   Stethoscope,
-  Syringe,
   Edit2,
   Check,
   X,
   CreditCard,
-  UserCheck
+  UserCheck,
+  Bell,
+  Syringe,
+  Calendar as CalendarIcon,
+  Pill
 } from 'lucide-react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 import { 
   collection, 
   query, 
@@ -29,7 +41,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
-import { Patient, Appointment, ActivityEvent, InventoryItem, Charge } from '../types';
+import { Patient, Appointment, ActivityEvent, InventoryItem, Charge, Notification } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -38,15 +50,6 @@ import { ScrollArea } from './ui/scroll-area';
 import { format, isAfter, isBefore, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from 'recharts';
 
 import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
 
@@ -57,6 +60,7 @@ const Dashboard: React.FC = () => {
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [charges, setCharges] = useState<Charge[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -131,12 +135,25 @@ const Dashboard: React.FC = () => {
       handleFirestoreError(error, OperationType.LIST, 'charges');
     });
 
+    // Fetch Recent Notifications
+    const qNotifs = query(
+      collection(db, 'notifications'),
+      where('clinicId', '==', clinicId),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+    const unsubNotifs = onSnapshot(qNotifs, (snapshot) => {
+      setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification)));
+    });
+
     return () => {
       unsubPatients();
       unsubAppointments();
       unsubActivity();
       unsubInventory();
       unsubCharges();
+      unsubNotifs();
     };
   }, [profile]);
 
@@ -348,8 +365,36 @@ const Dashboard: React.FC = () => {
 
         {/* Alerts & Today's Appointments */}
         <div className="col-span-3 space-y-6">
-          {/* Critical Alerts */}
-          {(lowStockItems.length > 0 || overdueVaccines.length > 0 || inactivePatients.length > 0) && (
+          {/* Notifications System */}
+          {notifications.length > 0 && (
+            <Card className="border-none bg-primary/5 shadow-inner rounded-[2rem] overflow-hidden">
+              <CardHeader className="pb-2 border-b border-primary/10">
+                <CardTitle className="text-xs font-black flex items-center gap-2 text-primary uppercase tracking-widest">
+                  <Bell className="w-4 h-4" /> Recordatorios Pendientes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-primary/5">
+                  {notifications.map((n) => (
+                    <div key={n.id} className="p-4 flex items-start gap-3 hover:bg-primary/5 transition-colors">
+                      <div className="w-8 h-8 rounded-xl bg-background flex items-center justify-center shadow-sm shrink-0">
+                        {n.type === 'vaccine' ? <Syringe className="w-4 h-4 text-emerald-500" /> :
+                         n.type === 'appointment' ? <CalendarIcon className="w-4 h-4 text-blue-500" /> :
+                         <Pill className="w-4 h-4 text-amber-500" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-black tracking-tight leading-tight">{n.title}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium line-clamp-1">{n.message}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Critical Alerts (Legacy) */}
+          {(lowStockItems.length > 0) && (
             <Card className="border-none bg-destructive/5 dark:bg-destructive/10 shadow-inner">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-black flex items-center gap-2 text-destructive uppercase tracking-widest">

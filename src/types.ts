@@ -153,3 +153,32 @@ export interface InternalLog {
   clinicId: string;
   imageUrl?: string;
 }
+
+export type NotificationType = 'vaccine' | 'appointment' | 'treatment' | 'control' | 'system';
+export type NotificationStatus = 'pending' | 'sent' | 'read' | 'dismissed';
+export type NotificationChannel = 'in-app' | 'email' | 'whatsapp';
+
+export interface Notification {
+  id: string;
+  clinicId: string;
+  patientId: string;
+  patientName: string;
+  ownerName: string;
+  ownerPhone?: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  scheduledDate: Timestamp; // When it should be sent/shown
+  status: NotificationStatus;
+  channels: NotificationChannel[];
+  relatedId?: string; // ID of the appointment, vaccine event, or prescription
+  createdAt: Timestamp;
+}
+
+export interface NotificationConfig {
+  clinicId: string;
+  vaccineReminderDays: number; // e.g., 7 days before
+  appointmentReminderHours: number; // e.g., 24 hours before
+  treatmentReminderEnabled: boolean;
+  channels: NotificationChannel[];
+}

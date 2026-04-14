@@ -26,6 +26,7 @@ import { Separator } from './ui/separator';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from 'next-themes';
+import NotificationCenter from './NotificationCenter';
 
 interface SidebarProps {
   activeTab: string;
@@ -44,6 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'daily', label: 'Flow del Día', icon: LayoutGrid },
     { id: 'inventory', label: 'Inventario', icon: Package },
     { id: 'logs', label: 'Bitácora', icon: ClipboardList },
+    { id: 'settings', label: 'Configuración', icon: Settings },
   ];
 
   if (profile?.role === 'superadmin') {
@@ -91,6 +93,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                 <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
               </Button>
+              <div className="hidden md:block">
+                <NotificationCenter />
+              </div>
             </div>
 
             <nav className="space-y-1.5">

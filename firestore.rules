@@ -79,6 +79,27 @@
 //   - amount: number
 //   - status: string (enum: ['pending', 'paid'])
 //
+// Collection: notifications
+// Document ID: {id}
+// Fields:
+//   - clinicId: string
+//   - patientId: string
+//   - type: string
+//   - title: string
+//   - message: string
+//   - scheduledDate: timestamp
+//   - status: string
+//   - createdAt: timestamp
+//
+// Collection: notification_configs
+// Document ID: {clinicId}
+// Fields:
+//   - clinicId: string
+//   - vaccineReminderDays: number
+//   - appointmentReminderHours: number
+//   - treatmentReminderEnabled: bool
+//   - channels: list
+//
 // ===============================================================
 
 rules_version = '2';
@@ -218,6 +239,25 @@ service cloud.firestore {
              data.status in ['pending', 'paid'];
     }
 
+    function isValidNotification(data) {
+      return data.clinicId is string &&
+             data.patientId is string &&
+             data.type in ['vaccine', 'appointment', 'treatment', 'control', 'system'] &&
+             data.title is string &&
+             data.message is string &&
+             data.scheduledDate is timestamp &&
+             data.status in ['pending', 'sent', 'read', 'dismissed'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidNotificationConfig(data) {
+      return data.clinicId is string &&
+             data.vaccineReminderDays is number &&
+             data.appointmentReminderHours is number &&
+             data.treatmentReminderEnabled is bool &&
+             data.channels is list;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -309,6 +349,18 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
       allow update: if isAuthenticated() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
       allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+    }
+
+    match /notifications/{id} {
+      allow read: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow create: if isAuthenticated() && isValidNotification(request.resource.data) && isClinicMember(request.resource.data.clinicId) && isClinicActive(request.resource.data.clinicId);
+      allow update: if isAuthenticated() && (isClinicMember(resource.data.clinicId) || isSuperAdmin());
+      allow delete: if isClinicAdmin() && isClinicMember(resource.data.clinicId) && isClinicActive(resource.data.clinicId);
+    }
+
+    match /notification_configs/{clinicId} {
+      allow read: if isAuthenticated() && (isClinicMember(clinicId) || isSuperAdmin());
+      allow write: if isAuthenticated() && (isClinicMember(clinicId) || isSuperAdmin()) && isClinicAdmin();
     }
   }
 }

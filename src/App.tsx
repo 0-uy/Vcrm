@@ -10,19 +10,28 @@ import InventoryView from './components/InventoryView';
 import SuperAdminView from './components/SuperAdminView';
 import DailyBoard from './components/DailyBoard';
 import LoginView from './components/LoginView';
+import NotificationSettings from './components/NotificationSettings';
 import { Patient } from './types';
 import { Toaster } from './components/ui/sonner';
-import { ShieldAlert, LogOut } from 'lucide-react';
+import { ShieldAlert, LogOut, Bell } from 'lucide-react';
 import { auth } from './firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
 import { motion, AnimatePresence } from 'motion/react';
+import { syncNotifications } from './lib/notification-service';
+import NotificationCenter from './components/NotificationCenter';
 
 export default function App() {
   const { user, profile, clinic, loading, isAuthReady } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+
+  React.useEffect(() => {
+    if (isAuthReady && profile?.clinicId) {
+      syncNotifications(profile.clinicId);
+    }
+  }, [isAuthReady, profile?.clinicId]);
 
   const isSuspended = clinic?.status === 'suspended' && profile?.role !== 'superadmin';
 
@@ -203,6 +212,17 @@ export default function App() {
             <SuperAdminView />
           </motion.div>
         );
+      case 'settings':
+        return (
+          <motion.div
+            key="settings"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <NotificationSettings />
+          </motion.div>
+        );
       default:
         return <Dashboard />;
     }
@@ -217,6 +237,9 @@ export default function App() {
       
       <main className="md:pl-64 min-h-screen">
         <div className="container mx-auto p-4 md:p-8 max-w-7xl">
+          <div className="flex justify-end mb-6 md:hidden">
+            <NotificationCenter />
+          </div>
           <AnimatePresence mode="wait">
             {renderContent()}
           </AnimatePresence>

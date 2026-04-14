@@ -153,6 +153,39 @@
         "size": { "type": "number" }
       },
       "required": ["patientId", "clinicId", "date", "name", "type", "url"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System generated notification",
+      "type": "object",
+      "properties": {
+        "clinicId": { "type": "string" },
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "type": { "type": "string", "enum": ["vaccine", "appointment", "treatment", "control", "system"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "scheduledDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "sent", "read", "dismissed"] },
+        "channels": { "type": "array", "items": { "type": "string" } },
+        "relatedId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clinicId", "patientId", "type", "title", "message", "scheduledDate", "status", "createdAt"]
+    },
+    "NotificationConfig": {
+      "title": "Notification Config",
+      "description": "Clinic notification settings",
+      "type": "object",
+      "properties": {
+        "clinicId": { "type": "string" },
+        "vaccineReminderDays": { "type": "number" },
+        "appointmentReminderHours": { "type": "number" },
+        "treatmentReminderEnabled": { "type": "boolean" },
+        "channels": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["clinicId", "vaccineReminderDays", "appointmentReminderHours", "treatmentReminderEnabled", "channels"]
     }
   },
   "firestore": {
@@ -195,6 +228,14 @@
     "/attachments/{id}": {
       "schema": "Attachment",
       "description": "Patient file attachments"
+    },
+    "/notifications/{id}": {
+      "schema": "Notification",
+      "description": "System generated notifications"
+    },
+    "/notification_configs/{clinicId}": {
+      "schema": "NotificationConfig",
+      "description": "Clinic notification settings"
     }
   }
 }
