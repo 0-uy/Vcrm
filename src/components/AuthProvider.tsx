@@ -11,6 +11,7 @@ interface AuthContextType {
   clinic: Clinic | null;
   loading: boolean;
   isAuthReady: boolean;
+  updateProfileName: (name: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   clinic: null,
   loading: true,
   isAuthReady: false,
+  updateProfileName: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -29,6 +31,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
+
+  const updateProfileName = async (name: string) => {
+    if (!user) {
+      // Fallback to localStorage if not authenticated (though unlikely in this app structure)
+      localStorage.setItem('vcrm_guest_name', name);
+      return;
+    }
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const updateData: any = { 
+        displayName: name,
+        uid: user.uid,
+        email: user.email || ''
+      };
+
+      await setDoc(userRef, updateData, { merge: true });
+      setProfile(prev => prev ? { ...prev, displayName: name } : {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: name,
+        role: 'staff', // Default role if creating from here
+        clinicId: ''   // Will be updated during clinic setup
+      } as UserProfile);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -65,7 +95,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, clinic, loading, isAuthReady }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      profile, 
+      clinic, 
+      loading, 
+      isAuthReady, 
+      updateProfileName: updateProfileName || (async () => { console.warn('updateProfileName not initialized'); }) 
+    }}>
       {children}
     </AuthContext.Provider>
   );

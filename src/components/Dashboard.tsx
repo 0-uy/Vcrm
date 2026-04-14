@@ -11,7 +11,12 @@ import {
   Activity,
   AlertTriangle,
   Stethoscope,
-  Syringe
+  Syringe,
+  Edit2,
+  Check,
+  X,
+  CreditCard,
+  UserCheck
 } from 'lucide-react';
 import { 
   collection, 
@@ -26,6 +31,8 @@ import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
 import { Patient, Appointment, ActivityEvent, InventoryItem, Charge } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { format, isAfter, isBefore, subMonths } from 'date-fns';
@@ -44,12 +51,30 @@ import {
 import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
 
 const Dashboard: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, updateProfileName } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [charges, setCharges] = useState<Charge[]>([]);
+  
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState('');
+
+  useEffect(() => {
+    if (profile?.displayName) {
+      setTempName(profile.displayName);
+    } else {
+      const savedName = localStorage.getItem('vcrm_guest_name');
+      if (savedName) setTempName(savedName);
+    }
+  }, [profile]);
+
+  const handleSaveName = async () => {
+    if (!tempName.trim()) return;
+    await updateProfileName(tempName);
+    setIsEditingName(false);
+  };
 
   useEffect(() => {
     if (!profile) return;
@@ -70,8 +95,7 @@ const Dashboard: React.FC = () => {
     const qAppointments = query(
       collection(db, 'appointments'), 
       where('clinicId', '==', clinicId),
-      where('date', '>=', Timestamp.fromDate(today)),
-      orderBy('date', 'asc')
+      where('date', '>=', Timestamp.fromDate(today))
     );
     const unsubAppointments = onSnapshot(qAppointments, (snapshot) => {
       setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment)));
@@ -83,7 +107,6 @@ const Dashboard: React.FC = () => {
     const qActivity = query(
       collection(db, 'activity'),
       where('clinicId', '==', clinicId),
-      orderBy('date', 'desc'),
       limit(10)
     );
     const unsubActivity = onSnapshot(qActivity, (snapshot) => {
@@ -138,13 +161,57 @@ const Dashboard: React.FC = () => {
     { label: 'Pendiente Cobro', value: `$${totalPending.toLocaleString()}`, icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
   ];
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dailyIncome = charges
+    .filter(c => c.status === 'paid' && c.date.toDate() >= today)
+    .reduce((sum, c) => sum + c.amount, 0);
+  const patientsAttendedToday = appointments.filter(a => a.status === 'attended' && a.date.toDate() >= today).length;
+  const upcomingTurns = appointments.filter(a => a.status === 'pending' && a.date.toDate() >= new Date()).length;
+
+  const secondaryStats = [
+    { label: 'Ingresos Hoy', value: `$${dailyIncome.toLocaleString()}`, icon: CreditCard, color: 'text-emerald-500' },
+    { label: 'Atendidos Hoy', value: patientsAttendedToday, icon: UserCheck, color: 'text-blue-500' },
+    { label: 'Próximos Turnos', value: upcomingTurns, icon: Clock, color: 'text-indigo-500' },
+  ];
+
   return (
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Hola, {profile?.displayName?.split(' ')[0] || 'Doctor'}
-          </h2>
+          <div className="flex items-center gap-3 group">
+            {isEditingName ? (
+              <div className="flex items-center gap-2 animate-in slide-in-from-left-2 duration-300">
+                <Input 
+                  value={tempName}
+                  onChange={e => setTempName(e.target.value)}
+                  className="text-2xl font-black h-12 w-64 rounded-xl bg-background border-primary/20 focus:border-primary transition-all"
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                />
+                <Button size="icon" className="h-10 w-10 rounded-xl" onClick={handleSaveName}>
+                  <Check className="w-5 h-5" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl" onClick={() => setIsEditingName(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  Hola, {profile?.displayName?.split(' ')[0] || tempName.split(' ')[0] || 'Doctor'}
+                </h2>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/10"
+                  onClick={() => setIsEditingName(true)}
+                >
+                  <Edit2 className="w-4 h-4 text-primary/60" />
+                </Button>
+              </>
+            )}
+          </div>
           <p className="text-muted-foreground font-medium">
             Resumen operativo para <span className="text-foreground font-bold">{profile?.clinicName || 'tu clínica'}</span>.
           </p>
@@ -178,6 +245,21 @@ const Dashboard: React.FC = () => {
               </p>
             </CardContent>
           </Card>
+        ))}
+      </div>
+
+      {/* Secondary Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {secondaryStats.map((stat, i) => (
+          <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm">
+            <div className={cn("p-3 rounded-xl bg-primary/5", stat.color.replace('text-', 'bg-').replace('500', '500/10'))}>
+              <stat.icon className={cn("w-5 h-5", stat.color)} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+              <p className="text-xl font-black">{stat.value}</p>
+            </div>
+          </div>
         ))}
       </div>
 

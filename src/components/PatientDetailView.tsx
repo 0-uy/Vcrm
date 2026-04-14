@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Separator } from './ui/separator';
 import { cn } from '@/lib/utils';
 import { 
@@ -12,6 +12,7 @@ import {
   Trash2,
   Edit2,
   AlertCircle,
+  AlertTriangle,
   MoreHorizontal,
   MapPin,
   Home,
@@ -46,7 +47,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
-import { Patient, ClinicalEvent, ClinicalEventType, Charge, ChargeStatus, Prescription, SOAPNote, Attachment } from '../types';
+import { Patient, ClinicalEvent, ClinicalEventType, Charge, ChargeStatus, Prescription, SOAPNote, Attachment, PaymentMethod } from '../types';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
@@ -88,6 +89,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [soapNotes, setSoapNotes] = useState<SOAPNote[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
   
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
@@ -105,6 +107,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     concept: 'Consulta',
     amount: 0,
     status: 'pending',
+    method: 'efectivo',
     date: Timestamp.now(),
   });
   const [newPrescription, setNewPrescription] = useState<Partial<Prescription>>({
@@ -137,8 +140,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
 
     const q = query(
       collection(db, 'patients', patient.id, 'history'),
-      where('clinicId', '==', profile.clinicId),
-      orderBy('date', 'desc')
+      where('clinicId', '==', profile.clinicId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -151,8 +153,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     const qCharges = query(
       collection(db, 'charges'),
       where('patientId', '==', patient.id),
-      where('clinicId', '==', profile.clinicId),
-      orderBy('date', 'desc')
+      where('clinicId', '==', profile.clinicId)
     );
 
     const unsubscribeCharges = onSnapshot(qCharges, (snapshot) => {
@@ -161,12 +162,24 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
       handleFirestoreError(error, OperationType.LIST, 'charges');
     });
 
+    // Fetch appointments
+    const qApps = query(
+      collection(db, 'appointments'),
+      where('patientId', '==', patient.id),
+      where('clinicId', '==', profile.clinicId)
+    );
+
+    const unsubscribeApps = onSnapshot(qApps, (snapshot) => {
+      setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'appointments');
+    });
+
     // Fetch prescriptions
     const qPrescriptions = query(
       collection(db, 'prescriptions'),
       where('patientId', '==', patient.id),
-      where('clinicId', '==', profile.clinicId),
-      orderBy('date', 'desc')
+      where('clinicId', '==', profile.clinicId)
     );
     const unsubscribePrescriptions = onSnapshot(qPrescriptions, (snapshot) => {
       setPrescriptions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Prescription)));
@@ -178,8 +191,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     const qSOAP = query(
       collection(db, 'soap_notes'),
       where('patientId', '==', patient.id),
-      where('clinicId', '==', profile.clinicId),
-      orderBy('date', 'desc')
+      where('clinicId', '==', profile.clinicId)
     );
     const unsubscribeSOAP = onSnapshot(qSOAP, (snapshot) => {
       setSoapNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SOAPNote)));
@@ -191,8 +203,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     const qAttachments = query(
       collection(db, 'attachments'),
       where('patientId', '==', patient.id),
-      where('clinicId', '==', profile.clinicId),
-      orderBy('date', 'desc')
+      where('clinicId', '==', profile.clinicId)
     );
     const unsubscribeAttachments = onSnapshot(qAttachments, (snapshot) => {
       setAttachments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attachment)));
@@ -327,7 +338,13 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
       });
 
       setIsAddChargeOpen(false);
-      setNewCharge({ concept: 'Consulta', amount: 0, status: 'pending', date: Timestamp.now() });
+      setNewCharge({ 
+        concept: 'Consulta', 
+        amount: 0, 
+        status: 'pending', 
+        method: 'efectivo',
+        date: Timestamp.now() 
+      });
       toast.success('Cargo registrado correctamente.');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'charges');
@@ -461,6 +478,8 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
 
   const totalPaid = charges.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0);
   const totalPending = charges.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
+  const lastPayment = charges.filter(c => c.status === 'paid').sort((a, b) => b.date.toMillis() - a.date.toMillis())[0];
+  const nextAppointment = appointments.filter(a => a.status === 'pending' && isAfter(a.date.toDate(), new Date())).sort((a, b) => a.date.toMillis() - b.date.toMillis())[0];
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-500">
@@ -476,9 +495,20 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         <div className="flex-1">
           <div className="flex items-center gap-4 mb-1">
             <h2 className="text-4xl font-black tracking-tight">{patient.name}</h2>
-            <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary px-3 py-1 rounded-full font-bold">
-              {patient.species}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary px-3 py-1 rounded-full font-bold">
+                {patient.species}
+              </Badge>
+              {totalPending > 0 ? (
+                <Badge className="bg-orange-500 hover:bg-orange-600 text-white border-none px-3 py-1 rounded-full font-bold shadow-lg shadow-orange-500/20">
+                  Debe ${totalPending.toFixed(2)}
+                </Badge>
+              ) : (
+                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-none px-3 py-1 rounded-full font-bold shadow-lg shadow-emerald-500/20">
+                  Al día
+                </Badge>
+              )}
+            </div>
           </div>
           <div className="text-muted-foreground font-medium flex items-center gap-3">
             <div className="flex items-center gap-1.5">
@@ -646,6 +676,23 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                     <SelectContent className="rounded-xl">
                       <SelectItem value="pending">Pendiente</SelectItem>
                       <SelectItem value="paid">Pagado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="method" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Método de Pago</Label>
+                  <Select 
+                    value={newCharge.method} 
+                    onValueChange={v => setNewCharge({...newCharge, method: v as PaymentMethod})}
+                  >
+                    <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
+                      <SelectValue placeholder="Seleccionar método" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="efectivo">Efectivo</SelectItem>
+                      <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                      <SelectItem value="transferencia">Transferencia</SelectItem>
+                      <SelectItem value="otro">Otro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -918,6 +965,47 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
             </DialogContent>
           </Dialog>
         </div>
+      </div>
+
+      {/* Quick Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-none rounded-3xl overflow-hidden bg-primary/5 border border-primary/10 shadow-sm">
+          <CardContent className="p-6 flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+              <Calendar className="w-7 h-7" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Próxima Cita</p>
+              <p className="text-xl font-black">
+                {nextAppointment ? format(nextAppointment.date.toDate(), "d 'de' MMM", { locale: es }) : 'Sin turnos'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none rounded-3xl overflow-hidden bg-orange-500/5 border border-orange-500/10 shadow-sm">
+          <CardContent className="p-6 flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-600 flex items-center justify-center shadow-inner">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-orange-600/70 mb-1">Deuda Pendiente</p>
+              <p className="text-xl font-black text-orange-600">${totalPending.toFixed(2)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none rounded-3xl overflow-hidden bg-emerald-500/5 border border-emerald-500/10 shadow-sm">
+          <CardContent className="p-6 flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-inner">
+              <CreditCard className="w-7 h-7" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/70 mb-1">Último Pago</p>
+              <p className="text-xl font-black text-emerald-600">
+                {lastPayment ? `$${lastPayment.amount.toFixed(2)}` : 'Sin pagos'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -1395,9 +1483,19 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                             </div>
                             <div>
                               <p className="font-black tracking-tight text-foreground">{charge.concept}</p>
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
-                                {format(charge.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
-                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                  {format(charge.date.toDate(), "d 'de' MMMM, yyyy", { locale: es })}
+                                </p>
+                                {charge.method && (
+                                  <>
+                                    <span className="text-muted-foreground/30">•</span>
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">
+                                      {charge.method}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-8">

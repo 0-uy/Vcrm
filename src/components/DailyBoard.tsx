@@ -56,8 +56,7 @@ const DailyBoard: React.FC = () => {
       collection(db, 'appointments'),
       where('clinicId', '==', profile.clinicId),
       where('date', '>=', Timestamp.fromDate(today)),
-      where('date', '<', Timestamp.fromDate(tomorrow)),
-      orderBy('date', 'asc')
+      where('date', '<', Timestamp.fromDate(tomorrow))
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

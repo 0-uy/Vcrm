@@ -71,8 +71,7 @@ const AppointmentsView: React.FC = () => {
 
     const q = query(
       collection(db, 'appointments'),
-      where('clinicId', '==', profile.clinicId),
-      orderBy('date', 'asc')
+      where('clinicId', '==', profile.clinicId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

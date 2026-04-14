@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ClipboardList, 
   Plus, 
   Search, 
   Trash2,
   Calendar as CalendarIcon,
-  Filter
+  Filter,
+  Camera,
+  X,
+  Image as ImageIcon
 } from 'lucide-react';
 import { 
   collection, 
@@ -45,15 +48,17 @@ const LogsView: React.FC = () => {
   const [logs, setLogs] = useState<InternalLog[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newLog, setNewLog] = useState({ content: '' });
+  const [newLog, setNewLog] = useState({ content: '', imageUrl: '' });
+  const [isCapturing, setIsCapturing] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (!profile) return;
 
     const q = query(
       collection(db, 'logs'),
-      where('clinicId', '==', profile.clinicId),
-      orderBy('date', 'desc')
+      where('clinicId', '==', profile.clinicId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -74,14 +79,53 @@ const LogsView: React.FC = () => {
     try {
       await addDoc(collection(db, 'logs'), {
         content: newLog.content,
+        imageUrl: newLog.imageUrl || null,
         date: Timestamp.now(),
         clinicId: profile.clinicId,
+        userName: profile.displayName || 'Staff',
       });
       setIsAddDialogOpen(false);
-      setNewLog({ content: '' });
+      setNewLog({ content: '', imageUrl: '' });
       toast.success('Nota guardada.');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'logs');
+    }
+  };
+
+  const startCamera = async () => {
+    setIsCapturing(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      toast.error("No se pudo acceder a la cámara");
+      setIsCapturing(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCapturing(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0);
+        const dataUrl = canvasRef.current.toDataURL('image/jpeg');
+        setNewLog(prev => ({ ...prev, imageUrl: dataUrl }));
+        stopCamera();
+      }
     }
   };
 
@@ -120,15 +164,82 @@ const LogsView: React.FC = () => {
               <DialogTitle className="text-2xl font-bold">Agregar Nota a la Bitácora</DialogTitle>
             </DialogHeader>
             <div className="grid gap-6 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="content" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Contenido de la nota</Label>
-                <Textarea 
-                  id="content" 
-                  placeholder="Escribe aquí incidencias, notas del día, recordatorios..." 
-                  className="min-h-[180px] rounded-2xl border-border bg-card shadow-sm focus:shadow-md transition-all resize-none p-4"
-                  value={newLog.content}
-                  onChange={e => setNewLog({ content: e.target.value })}
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="content" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Contenido de la nota</Label>
+                  <Textarea 
+                    id="content" 
+                    placeholder="Escribe aquí incidencias, notas del día, recordatorios..." 
+                    className="min-h-[120px] rounded-2xl border-border bg-card shadow-sm focus:shadow-md transition-all resize-none p-4"
+                    value={newLog.content}
+                    onChange={e => setNewLog({ ...newLog, content: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Adjuntar Imagen</Label>
+                  
+                  {newLog.imageUrl ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-primary/20 aspect-video group">
+                      <img src={newLog.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute top-2 right-2 h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setNewLog(prev => ({ ...prev, imageUrl: '' }))}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : isCapturing ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-primary/20 aspect-video bg-black">
+                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                        <Button onClick={capturePhoto} className="rounded-full h-12 w-12 p-0">
+                          <div className="w-8 h-8 rounded-full border-4 border-white" />
+                        </Button>
+                        <Button variant="destructive" onClick={stopCamera} className="rounded-full h-12 w-12 p-0">
+                          <X className="w-6 h-6" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button 
+                        variant="outline" 
+                        className="h-24 flex flex-col gap-2 rounded-2xl border-dashed border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all"
+                        onClick={startCamera}
+                      >
+                        <Camera className="w-6 h-6 text-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Cámara</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="h-24 flex flex-col gap-2 rounded-2xl border-dashed border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e: any) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setNewLog(prev => ({ ...prev, imageUrl: reader.result as string }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        <ImageIcon className="w-6 h-6 text-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Galería</span>
+                      </Button>
+                    </div>
+                  )}
+                  <canvas ref={canvasRef} className="hidden" />
+                </div>
               </div>
             </div>
             <DialogFooter className="gap-2">
@@ -177,7 +288,19 @@ const LogsView: React.FC = () => {
                 </div>
                 <div className="relative">
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20 rounded-full" />
-                  <p className="text-sm font-medium whitespace-pre-wrap leading-relaxed pl-6 text-foreground/90">{log.content}</p>
+                  <div className="pl-6 space-y-4">
+                    <p className="text-sm font-medium whitespace-pre-wrap leading-relaxed text-foreground/90">{log.content}</p>
+                    {log.imageUrl && (
+                      <div className="max-w-md rounded-2xl overflow-hidden border border-primary/10 shadow-sm">
+                        <img 
+                          src={log.imageUrl} 
+                          alt="Log attachment" 
+                          className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

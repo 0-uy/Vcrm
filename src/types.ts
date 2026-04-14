@@ -74,6 +74,7 @@ export interface ActivityEvent {
 }
 
 export type ChargeStatus = 'pending' | 'paid';
+export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'otro';
 
 export interface Charge {
   id: string;
@@ -84,6 +85,7 @@ export interface Charge {
   concept: string;
   amount: number;
   status: ChargeStatus;
+  method?: PaymentMethod;
 }
 
 export interface InventoryItem {
@@ -149,4 +151,5 @@ export interface InternalLog {
   content: string;
   patientId?: string;
   clinicId: string;
+  imageUrl?: string;
 }
