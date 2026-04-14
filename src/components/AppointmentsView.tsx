@@ -63,6 +63,8 @@ const AppointmentsView: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newAppointment, setNewAppointment] = useState<Partial<Appointment>>({
     status: 'pending',
+    patientId: '',
+    reason: '',
     date: Timestamp.fromDate(new Date()),
   });
 
@@ -116,7 +118,12 @@ const AppointmentsView: React.FC = () => {
       });
 
       setIsAddDialogOpen(false);
-      setNewAppointment({ status: 'pending', date: Timestamp.fromDate(new Date()) });
+      setNewAppointment({ 
+        status: 'pending', 
+        patientId: '', 
+        reason: '', 
+        date: Timestamp.fromDate(new Date()) 
+      });
       toast.success('Turno programado correctamente.');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'appointments');
@@ -145,7 +152,112 @@ const AppointmentsView: React.FC = () => {
     }
   };
 
-  const filteredAppointments = appointments.filter(a => isSameDay(a.date.toDate(), selectedDate));
+  const [viewMode, setViewMode] = useState<'daily' | 'all'>('daily');
+
+  const today = startOfDay(new Date());
+  const tomorrow = addDays(today, 1);
+
+  const todayApps = appointments.filter(a => isSameDay(a.date.toDate(), today));
+  const upcomingApps = appointments.filter(a => a.date.toDate() >= tomorrow).sort((a, b) => a.date.toMillis() - b.date.toMillis());
+  const pastApps = appointments.filter(a => a.date.toDate() < today).sort((a, b) => b.date.toMillis() - a.date.toMillis());
+
+  const getPatientName = (app: Appointment) => {
+    if (app.patientName && app.patientName !== app.patientId) return app.patientName;
+    const p = patients.find(p => p.id === app.patientId);
+    return p?.name || 'Paciente Desconocido';
+  };
+
+  const filteredAppointments = viewMode === 'daily' 
+    ? appointments.filter(a => isSameDay(a.date.toDate(), selectedDate))
+    : [];
+
+  const AppointmentCard: React.FC<{ app: Appointment }> = ({ app }) => (
+    <Card className={cn(
+      "border border-border rounded-[2rem] overflow-hidden transition-all duration-500 group hover:shadow-2xl hover:-translate-y-1",
+      app.status === 'attended' && "opacity-60 grayscale-[0.5]"
+    )}>
+      <CardContent className="p-0">
+        <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
+          <div className="flex items-center gap-4 md:w-48">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black shadow-inner group-hover:scale-110 transition-transform">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-tighter">{format(app.date.toDate(), 'HH:mm')}</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">{format(app.date.toDate(), 'dd MMM yyyy', { locale: es })}</span>
+            </div>
+          </div>
+          
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-3">
+              <h3 className="font-black text-xl tracking-tight group-hover:text-primary transition-colors">
+                {getPatientName(app)}
+              </h3>
+              {app.isHomeVisit && (
+                <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-none gap-1.5 rounded-lg px-3 py-1 font-black text-[10px] uppercase tracking-widest">
+                  <Home className="w-3 h-3" /> Domicilio
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm font-medium text-muted-foreground leading-relaxed">{app.reason}</p>
+            
+            {app.isHomeVisit && (
+              <div className="mt-3 flex items-start gap-3 text-xs font-medium text-muted-foreground bg-muted/30 dark:bg-white/5 p-3 rounded-2xl border border-primary/5">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-primary/50" />
+                <div>
+                  {(() => {
+                    const p = patients.find(p => p.id === app.patientId);
+                    if (p?.ownerAddress) {
+                      return (
+                        <>
+                          <span className="font-bold text-foreground">{p.ownerAddress}</span>
+                          {p.ownerNeighborhood && <span className="opacity-70"> • {p.ownerNeighborhood}</span>}
+                          {p.addressNotes && <p className="italic mt-1 opacity-60">"{p.addressNotes}"</p>}
+                        </>
+                      );
+                    }
+                    return <span className="italic opacity-50">Sin dirección registrada</span>;
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Badge className={cn(
+              "font-black uppercase text-[10px] tracking-widest px-4 py-1.5 rounded-full border-none shadow-sm",
+              app.status === 'pending' ? 'bg-orange-500/10 text-orange-600' : 
+              app.status === 'attended' ? 'bg-emerald-500/10 text-emerald-600' : 
+              'bg-destructive/10 text-destructive'
+            )}>
+              {app.status === 'pending' ? 'Pendiente' : app.status === 'attended' ? 'Atendido' : 'Cancelado'}
+            </Badge>
+            
+            {app.status === 'pending' && (
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl h-10 px-4 font-bold border-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/20 transition-all"
+                  onClick={() => updateStatus(app.id, 'attended')}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Atender
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl h-10 px-4 font-bold border-destructive/10 text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all"
+                  onClick={() => updateStatus(app.id, 'cancelled')}
+                >
+                  <XCircle className="w-4 h-4 mr-2" /> Cancelar
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-500">
@@ -157,213 +269,209 @@ const AppointmentsView: React.FC = () => {
           <p className="text-muted-foreground font-medium">Gestiona las citas y visitas del día.</p>
         </div>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 rounded-xl h-12 px-6 shadow-lg shadow-primary/20 font-bold">
-              <Plus className="w-5 h-5" /> Nuevo Turno
+        <div className="flex items-center gap-3">
+          <div className="bg-muted/50 p-1 rounded-2xl border border-border flex items-center">
+            <Button 
+              variant={viewMode === 'daily' ? 'default' : 'ghost'} 
+              size="sm" 
+              className="rounded-xl font-bold px-4"
+              onClick={() => setViewMode('daily')}
+            >
+              Vista Diaria
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] glass border-none shadow-2xl rounded-3xl">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Programar Turno</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-6 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="patient" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Paciente *</Label>
-                <Select 
-                  value={newAppointment.patientId} 
-                  onValueChange={v => setNewAppointment({...newAppointment, patientId: v})}
-                >
-                  <SelectTrigger className="rounded-xl h-11 bg-muted/50 border-border shadow-sm">
-                    <SelectValue placeholder="Seleccionar paciente" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border border-border bg-popover shadow-2xl">
-                    {patients.map(p => (
-                      <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.name} ({p.ownerName})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
+            <Button 
+              variant={viewMode === 'all' ? 'default' : 'ghost'} 
+              size="sm" 
+              className="rounded-xl font-bold px-4"
+              onClick={() => setViewMode('all')}
+            >
+              Todas las Citas
+            </Button>
+          </div>
+          
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 rounded-xl h-12 px-6 shadow-lg shadow-primary/20 font-bold">
+                <Plus className="w-5 h-5" /> Nuevo Turno
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] glass border-none shadow-2xl rounded-3xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold">Programar Turno</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-6 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Fecha</Label>
-                  <Input 
-                    id="date" 
-                    type="date" 
-                    className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
-                    defaultValue={format(new Date(), 'yyyy-MM-dd')}
-                    onChange={e => {
-                      const date = new Date(e.target.value);
-                      const current = newAppointment.date?.toDate() || new Date();
-                      date.setHours(current.getHours(), current.getMinutes());
-                      setNewAppointment({...newAppointment, date: Timestamp.fromDate(date)});
-                    }}
-                  />
+                  <Label htmlFor="patient" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Paciente *</Label>
+                  <Select 
+                    value={newAppointment.patientId || ""} 
+                    onValueChange={v => setNewAppointment({...newAppointment, patientId: v})}
+                  >
+                    <SelectTrigger className="rounded-xl h-11 bg-muted/50 border-border shadow-sm">
+                      <SelectValue placeholder="Seleccionar paciente" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-border bg-popover shadow-2xl">
+                      {patients.map(p => (
+                        <SelectItem key={p.id} value={p.id} className="rounded-lg">{p.name} ({p.ownerName})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="date" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Fecha</Label>
+                    <Input 
+                      id="date" 
+                      type="date" 
+                      className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
+                      value={format(newAppointment.date?.toDate() || new Date(), 'yyyy-MM-dd')}
+                      onChange={e => {
+                        const date = new Date(e.target.value);
+                        const current = newAppointment.date?.toDate() || new Date();
+                        date.setHours(current.getHours(), current.getMinutes());
+                        setNewAppointment({...newAppointment, date: Timestamp.fromDate(date)});
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="time" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Hora</Label>
+                    <Input 
+                      id="time" 
+                      type="time" 
+                      className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
+                      value={format(newAppointment.date?.toDate() || new Date(), 'HH:mm')}
+                      onChange={e => {
+                        const [h, m] = e.target.value.split(':').map(Number);
+                        const date = newAppointment.date?.toDate() || new Date();
+                        date.setHours(h, m);
+                        setNewAppointment({...newAppointment, date: Timestamp.fromDate(date)});
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Hora</Label>
+                  <Label htmlFor="reason" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Motivo *</Label>
                   <Input 
-                    id="time" 
-                    type="time" 
+                    id="reason" 
+                    placeholder="Ej: Vacunación, Control" 
                     className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
-                    defaultValue={format(new Date(), 'HH:mm')}
-                    onChange={e => {
-                      const [h, m] = e.target.value.split(':').map(Number);
-                      const date = newAppointment.date?.toDate() || new Date();
-                      date.setHours(h, m);
-                      setNewAppointment({...newAppointment, date: Timestamp.fromDate(date)});
-                    }}
+                    value={newAppointment.reason || ''} 
+                    onChange={e => setNewAppointment({...newAppointment, reason: e.target.value})}
                   />
                 </div>
+                <div className="flex items-center space-x-3 pt-2 bg-primary/5 p-4 rounded-2xl border border-primary/5">
+                  <input 
+                    type="checkbox" 
+                    id="homeVisit" 
+                    className="h-5 w-5 rounded-lg border-primary/20 text-primary focus:ring-primary bg-background"
+                    checked={newAppointment.isHomeVisit || false}
+                    onChange={e => setNewAppointment({...newAppointment, isHomeVisit: e.target.checked})}
+                  />
+                  <Label htmlFor="homeVisit" className="text-sm font-bold leading-none cursor-pointer">
+                    Consulta a domicilio
+                  </Label>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="reason" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Motivo *</Label>
-                <Input 
-                  id="reason" 
-                  placeholder="Ej: Vacunación, Control" 
-                  className="rounded-xl h-11 bg-muted/50 border-border shadow-sm"
-                  value={newAppointment.reason || ''} 
-                  onChange={e => setNewAppointment({...newAppointment, reason: e.target.value})}
-                />
-              </div>
-              <div className="flex items-center space-x-3 pt-2 bg-primary/5 p-4 rounded-2xl border border-primary/5">
-                <input 
-                  type="checkbox" 
-                  id="homeVisit" 
-                  className="h-5 w-5 rounded-lg border-primary/20 text-primary focus:ring-primary bg-background"
-                  checked={newAppointment.isHomeVisit || false}
-                  onChange={e => setNewAppointment({...newAppointment, isHomeVisit: e.target.checked})}
-                />
-                <Label htmlFor="homeVisit" className="text-sm font-bold leading-none cursor-pointer">
-                  Consulta a domicilio
-                </Label>
-              </div>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl h-11 px-6 font-bold">Cancelar</Button>
-              <Button onClick={handleAddAppointment} className="rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20">Programar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl h-11 px-6 font-bold">Cancelar</Button>
+                <Button onClick={handleAddAppointment} className="rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20">Programar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Date Navigation */}
-      <div className="flex items-center justify-between bg-card p-4 rounded-[2rem] border border-border shadow-xl">
-        <div className="flex items-center gap-6">
-          <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-primary/10" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <div className="text-center min-w-[200px] space-y-0.5">
-            <p className="text-lg font-black tracking-tight capitalize">
-              {format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
-            </p>
-            {isSameDay(selectedDate, new Date()) && (
-              <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] animate-pulse">HOY</p>
+      {viewMode === 'daily' ? (
+        <>
+          {/* Date Navigation */}
+          <div className="flex items-center justify-between bg-card p-4 rounded-[2rem] border border-border shadow-xl">
+            <div className="flex items-center gap-6">
+              <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-primary/10" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div className="text-center min-w-[200px] space-y-0.5">
+                <p className="text-lg font-black tracking-tight capitalize">
+                  {format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
+                </p>
+                {isSameDay(selectedDate, new Date()) && (
+                  <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] animate-pulse">HOY</p>
+                )}
+              </div>
+              <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-primary/10" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" className="rounded-xl font-bold px-6 border-primary/10 hover:bg-primary/5" onClick={() => setSelectedDate(new Date())}>
+              Ir a Hoy
+            </Button>
+          </div>
+
+          {/* Appointments List */}
+          <div className="space-y-6">
+            {filteredAppointments.length === 0 ? (
+              <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] bg-card animate-in fade-in zoom-in duration-700">
+                <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CalendarIcon className="w-10 h-10 text-primary/30" />
+                </div>
+                <p className="text-muted-foreground font-bold text-lg">No hay turnos programados para este día.</p>
+              </div>
+            ) : (
+              filteredAppointments.map((app) => (
+                <AppointmentCard key={app.id} app={app} />
+              ))
             )}
           </div>
-          <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-primary/10" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
-        <Button variant="outline" size="sm" className="rounded-xl font-bold px-6 border-primary/10 hover:bg-primary/5" onClick={() => setSelectedDate(new Date())}>
-          Ir a Hoy
-        </Button>
-      </div>
-
-      {/* Appointments List */}
-      <div className="space-y-6">
-        {filteredAppointments.length === 0 ? (
-          <div className="py-32 text-center border-2 border-dashed border-primary/10 rounded-[3rem] bg-card animate-in fade-in zoom-in duration-700">
-            <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CalendarIcon className="w-10 h-10 text-primary/30" />
+        </>
+      ) : (
+        <div className="space-y-12">
+          {/* Today Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-4">
+              <div className="w-2 h-8 bg-primary rounded-full" />
+              <h3 className="text-2xl font-black tracking-tight">Turnos de Hoy</h3>
+              <Badge variant="secondary" className="rounded-lg">{todayApps.length}</Badge>
             </div>
-            <p className="text-muted-foreground font-bold text-lg">No hay turnos programados para este día.</p>
+            <div className="space-y-4">
+              {todayApps.length === 0 ? (
+                <p className="text-muted-foreground font-medium px-4 italic">No hay turnos para hoy.</p>
+              ) : (
+                todayApps.map(app => <AppointmentCard key={app.id} app={app} />)
+              )}
+            </div>
           </div>
-        ) : (
-          filteredAppointments.map((app) => (
-            <Card key={app.id} className={cn(
-              "border border-border rounded-[2rem] overflow-hidden transition-all duration-500 group hover:shadow-2xl hover:-translate-y-1",
-              app.status === 'attended' && "opacity-60 grayscale-[0.5]"
-            )}>
-              <CardContent className="p-0">
-                <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
-                  <div className="flex items-center gap-4 md:w-36">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black shadow-inner group-hover:scale-110 transition-transform">
-                      <Clock className="w-6 h-6" />
-                    </div>
-                    <span className="text-2xl font-black tracking-tighter">{format(app.date.toDate(), 'HH:mm')}</span>
-                  </div>
-                  
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-black text-xl tracking-tight group-hover:text-primary transition-colors">{app.patientName}</h3>
-                      {app.isHomeVisit && (
-                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-none gap-1.5 rounded-lg px-3 py-1 font-black text-[10px] uppercase tracking-widest">
-                          <Home className="w-3 h-3" /> Domicilio
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">{app.reason}</p>
-                    
-                    {app.isHomeVisit && (
-                      <div className="mt-3 flex items-start gap-3 text-xs font-medium text-muted-foreground bg-muted/30 dark:bg-white/5 p-3 rounded-2xl border border-primary/5">
-                        <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-primary/50" />
-                        <div>
-                          {(() => {
-                            const p = patients.find(p => p.id === app.patientId);
-                            if (p?.ownerAddress) {
-                              return (
-                                <>
-                                  <span className="font-bold text-foreground">{p.ownerAddress}</span>
-                                  {p.ownerNeighborhood && <span className="opacity-70"> • {p.ownerNeighborhood}</span>}
-                                  {p.addressNotes && <p className="italic mt-1 opacity-60">"{p.addressNotes}"</p>}
-                                </>
-                              );
-                            }
-                            return <span className="italic opacity-50">Sin dirección registrada</span>;
-                          })()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex items-center gap-4">
-                    <Badge className={cn(
-                      "font-black uppercase text-[10px] tracking-widest px-4 py-1.5 rounded-full border-none shadow-sm",
-                      app.status === 'pending' ? 'bg-orange-500/10 text-orange-600' : 
-                      app.status === 'attended' ? 'bg-emerald-500/10 text-emerald-600' : 
-                      'bg-destructive/10 text-destructive'
-                    )}>
-                      {app.status === 'pending' ? 'Pendiente' : app.status === 'attended' ? 'Atendido' : 'Cancelado'}
-                    </Badge>
-                    
-                    {app.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="rounded-xl h-10 px-4 font-bold border-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/20 transition-all"
-                          onClick={() => updateStatus(app.id, 'attended')}
-                        >
-                          <CheckCircle2 className="w-4 h-4 mr-2" /> Atender
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="rounded-xl h-10 px-4 font-bold border-destructive/10 text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all"
-                          onClick={() => updateStatus(app.id, 'cancelled')}
-                        >
-                          <XCircle className="w-4 h-4 mr-2" /> Cancelar
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+          {/* Upcoming Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-4">
+              <div className="w-2 h-8 bg-indigo-500 rounded-full" />
+              <h3 className="text-2xl font-black tracking-tight">Próximos Turnos</h3>
+              <Badge variant="secondary" className="rounded-lg">{upcomingApps.length}</Badge>
+            </div>
+            <div className="space-y-4">
+              {upcomingApps.length === 0 ? (
+                <p className="text-muted-foreground font-medium px-4 italic">No hay turnos futuros.</p>
+              ) : (
+                upcomingApps.map(app => <AppointmentCard key={app.id} app={app} />)
+              )}
+            </div>
+          </div>
+
+          {/* Past Section */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-4">
+              <div className="w-2 h-8 bg-muted rounded-full" />
+              <h3 className="text-2xl font-black tracking-tight opacity-50">Turnos Pasados</h3>
+              <Badge variant="secondary" className="rounded-lg opacity-50">{pastApps.length}</Badge>
+            </div>
+            <div className="space-y-4 opacity-70">
+              {pastApps.length === 0 ? (
+                <p className="text-muted-foreground font-medium px-4 italic">No hay turnos pasados.</p>
+              ) : (
+                pastApps.map(app => <AppointmentCard key={app.id} app={app} />)
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

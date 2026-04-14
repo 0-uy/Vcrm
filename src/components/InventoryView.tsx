@@ -117,7 +117,6 @@ const InventoryView: React.FC = () => {
   };
 
   const handleDeleteItem = async (id: string, name: string) => {
-    if (!confirm(`¿Eliminar "${name}" del inventario?`)) return;
     try {
       await deleteDoc(doc(db, 'inventory', id));
       toast.success('Producto eliminado.');

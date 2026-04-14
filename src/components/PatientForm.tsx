@@ -107,7 +107,7 @@ const PatientForm: React.FC<PatientFormProps> = ({ initialData, onSubmit, onCanc
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase text-muted-foreground">Especie *</Label>
             <Select 
-              value={formData.species} 
+              value={formData.species || ""} 
               onValueChange={v => setFormData({...formData, species: v})}
             >
               <SelectTrigger className="rounded-xl bg-muted/30 border-border">
@@ -156,7 +156,7 @@ const PatientForm: React.FC<PatientFormProps> = ({ initialData, onSubmit, onCanc
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase text-muted-foreground">Sexo</Label>
             <Select 
-              value={formData.sex} 
+              value={formData.sex || ""} 
               onValueChange={v => setFormData({...formData, sex: v as any})}
             >
               <SelectTrigger className="rounded-xl bg-muted/30 border-border">
@@ -172,7 +172,7 @@ const PatientForm: React.FC<PatientFormProps> = ({ initialData, onSubmit, onCanc
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase text-muted-foreground">Castrado / Esterilizado</Label>
             <Select 
-              value={formData.isNeutered} 
+              value={formData.isNeutered || ""} 
               onValueChange={v => setFormData({...formData, isNeutered: v as any})}
             >
               <SelectTrigger className="rounded-xl bg-muted/30 border-border">

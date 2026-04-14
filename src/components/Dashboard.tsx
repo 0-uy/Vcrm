@@ -154,26 +154,45 @@ const Dashboard: React.FC = () => {
     .filter(c => c.status === 'pending')
     .reduce((sum, c) => sum + c.amount, 0);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const todayAppointments = appointments.filter(a => {
+    const d = a.date.toDate();
+    return d >= today && d < tomorrow;
+  });
+
+  const upcomingAppointments = appointments.filter(a => {
+    const d = a.date.toDate();
+    return d >= tomorrow;
+  });
+
   const stats = [
     { label: 'Total Pacientes', value: patients.length, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Turnos Hoy', value: appointments.filter(a => a.status === 'pending').length, icon: Calendar, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+    { label: 'Turnos Hoy', value: todayAppointments.filter(a => a.status === 'pending').length, icon: Calendar, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
     { label: 'Ingresos Mes', value: `$${monthlyIncome.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     { label: 'Pendiente Cobro', value: `$${totalPending.toLocaleString()}`, icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
   ];
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   const dailyIncome = charges
-    .filter(c => c.status === 'paid' && c.date.toDate() >= today)
+    .filter(c => c.status === 'paid' && c.date.toDate() >= today && c.date.toDate() < tomorrow)
     .reduce((sum, c) => sum + c.amount, 0);
-  const patientsAttendedToday = appointments.filter(a => a.status === 'attended' && a.date.toDate() >= today).length;
-  const upcomingTurns = appointments.filter(a => a.status === 'pending' && a.date.toDate() >= new Date()).length;
+  const patientsAttendedToday = todayAppointments.filter(a => a.status === 'attended').length;
+  const upcomingTurnsCount = upcomingAppointments.filter(a => a.status === 'pending').length;
 
   const secondaryStats = [
     { label: 'Ingresos Hoy', value: `$${dailyIncome.toLocaleString()}`, icon: CreditCard, color: 'text-emerald-500' },
     { label: 'Atendidos Hoy', value: patientsAttendedToday, icon: UserCheck, color: 'text-blue-500' },
-    { label: 'Próximos Turnos', value: upcomingTurns, icon: Clock, color: 'text-indigo-500' },
+    { label: 'Próximos Turnos', value: upcomingTurnsCount, icon: Clock, color: 'text-indigo-500' },
   ];
+
+  const getPatientName = (app: Appointment) => {
+    if (app.patientName && app.patientName !== app.patientId) return app.patientName;
+    const p = patients.find(p => p.id === app.patientId);
+    return p?.name || 'Paciente Desconocido';
+  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -364,26 +383,26 @@ const Dashboard: React.FC = () => {
             <CardHeader className="border-b border-primary/5 pb-4">
               <CardTitle className="text-xl font-bold">Agenda de Hoy</CardTitle>
               <CardDescription>
-                {appointments.length} citas programadas para hoy.
+                {todayAppointments.length} citas programadas para hoy.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-4">
-                  {appointments.length === 0 ? (
+                  {todayAppointments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-12 opacity-20">
                       <Calendar className="h-10 w-10 mb-3" />
                       <p className="text-sm font-bold">Sin turnos hoy.</p>
                     </div>
                   ) : (
-                    appointments.map((app) => (
+                    todayAppointments.map((app) => (
                       <div key={app.id} className="flex items-center justify-between p-4 rounded-2xl border bg-primary/5 border-primary/10 hover:bg-primary/10 transition-colors group">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-sm">
-                            {app.patientName.charAt(0)}
+                            {getPatientName(app).charAt(0) || '?'}
                           </div>
                           <div>
-                            <p className="text-sm font-bold">{app.patientName}</p>
+                            <p className="text-sm font-bold">{getPatientName(app)}</p>
                             <div className="flex items-center gap-2 mt-0.5">
                               <Clock className="w-3 h-3 text-primary" />
                               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
@@ -396,10 +415,11 @@ const Dashboard: React.FC = () => {
                           variant={app.status === 'pending' ? 'outline' : 'default'} 
                           className={cn(
                             "text-[10px] font-bold uppercase px-2 h-6 rounded-full",
-                            app.status === 'pending' ? "border-primary/20 text-primary bg-primary/5" : "bg-emerald-500"
+                            app.status === 'pending' ? "border-primary/20 text-primary bg-primary/5" : 
+                            app.status === 'attended' ? "bg-emerald-500" : "bg-destructive"
                           )}
                         >
-                          {app.status === 'pending' ? 'Pendiente' : 'Atendido'}
+                          {app.status === 'pending' ? 'Pendiente' : app.status === 'attended' ? 'Atendido' : 'Cancelado'}
                         </Badge>
                       </div>
                     ))

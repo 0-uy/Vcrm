@@ -73,6 +73,9 @@ import {
 import { toast } from 'sonner';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import PrescriptionPDF from './PrescriptionPDF';
+import MedicalRecordPDF from './MedicalRecordPDF';
 
 import PatientForm from './PatientForm';
 import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
@@ -83,13 +86,14 @@ interface PatientDetailViewProps {
 }
 
 const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }) => {
-  const { profile } = useAuth();
+  const { profile, clinic } = useAuth();
   const [history, setHistory] = useState<ClinicalEvent[]>([]);
   const [charges, setCharges] = useState<Charge[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [soapNotes, setSoapNotes] = useState<SOAPNote[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isAddChargeOpen, setIsAddChargeOpen] = useState(false);
@@ -130,6 +134,11 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     type: 'image',
     date: Timestamp.now(),
   });
+
+  useEffect(() => {
+    console.log('PatientDetailView mounted/updated. Clinic:', clinic);
+    setIsMounted(true);
+  }, [clinic]);
 
   useEffect(() => {
     setEditPatient(patient);
@@ -392,6 +401,15 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     }
   };
 
+  const handleDeletePrescription = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'prescriptions', id));
+      toast.success('Receta eliminada correctamente.');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `prescriptions/${id}`);
+    }
+  };
+
   const handleAddSOAP = async () => {
     if (!profile || !newSOAP.assessment) {
       toast.error('Por favor completa al menos el diagnóstico/evaluación.');
@@ -567,7 +585,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                   <div className="space-y-2">
                     <Label htmlFor="type" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tipo de Evento</Label>
                     <Select 
-                      value={newEvent.type} 
+                      value={newEvent.type || ""} 
                       onValueChange={v => setNewEvent({...newEvent, type: v as ClinicalEventType})}
                     >
                       <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
@@ -587,7 +605,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                       id="date" 
                       type="date" 
                       className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
-                      defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                      value={format(newEvent.date?.toDate() || new Date(), 'yyyy-MM-dd')}
                       onChange={e => setNewEvent({...newEvent, date: Timestamp.fromDate(new Date(e.target.value))})}
                     />
                   </div>
@@ -637,7 +655,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <div className="space-y-2">
                   <Label htmlFor="concept" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Concepto *</Label>
                   <Select 
-                    value={newCharge.concept} 
+                    value={newCharge.concept || ""} 
                     onValueChange={v => setNewCharge({...newCharge, concept: v})}
                   >
                     <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
@@ -667,7 +685,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <div className="space-y-2">
                   <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Estado</Label>
                   <Select 
-                    value={newCharge.status} 
+                    value={newCharge.status || ""} 
                     onValueChange={v => setNewCharge({...newCharge, status: v as ChargeStatus})}
                   >
                     <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
@@ -682,7 +700,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                 <div className="space-y-2">
                   <Label htmlFor="method" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Método de Pago</Label>
                   <Select 
-                    value={newCharge.method} 
+                    value={newCharge.method || ""} 
                     onValueChange={v => setNewCharge({...newCharge, method: v as PaymentMethod})}
                   >
                     <SelectTrigger className="rounded-xl bg-primary/5 border-primary/10">
@@ -1155,6 +1173,36 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
             </TabsList>
             
             <TabsContent value="history" className="mt-8">
+              <div className="flex justify-end mb-4">
+                {isMounted && patient && (history.length > 0 || soapNotes.length > 0) && (
+                  <PDFDownloadLink
+                    key={`history-${patient.id}-${history.length}-${soapNotes.length}-${clinic?.id || 'no-clinic'}`}
+                    document={<MedicalRecordPDF patient={patient} history={history} soapNotes={soapNotes} clinic={clinic} />}
+                    fileName={`historia-clinica-${(patient.name || 'paciente').replace(/\s+/g, '-')}-${format(new Date(), 'dd-MM-yyyy')}.pdf`}
+                  >
+                    {({ loading, error }) => (
+                      <Button 
+                        variant="outline" 
+                        className={cn(
+                          "gap-2 rounded-xl border-primary/20 hover:bg-primary/5",
+                          error && "border-destructive text-destructive"
+                        )}
+                        disabled={loading}
+                        onClick={(e) => {
+                          if (error) {
+                            e.preventDefault();
+                            toast.error('Error al generar el PDF de historia clínica');
+                            console.error('PDF Error:', error);
+                          }
+                        }}
+                      >
+                        <Download className="w-4 h-4" /> 
+                        {loading ? 'Generando...' : 'Exportar Historia Clínica'}
+                      </Button>
+                    )}
+                  </PDFDownloadLink>
+                )}
+              </div>
               <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-primary/20 before:to-transparent">
                 {history.length === 0 ? (
                   <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-primary/5 border-primary/10">
@@ -1280,9 +1328,47 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                               </p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm" className="gap-2 rounded-xl border-primary/10 hover:bg-primary/5">
-                            <Download className="w-4 h-4" /> PDF
-                          </Button>
+                          <div className="flex gap-2">
+                            {isMounted && (
+                              <PDFDownloadLink
+                                key={`prescription-${p.id}-${clinic?.id || 'no-clinic'}`}
+                                document={<PrescriptionPDF prescription={p} patient={patient} clinic={clinic} vetName={profile?.displayName} />}
+                                fileName={`receta-${(patient.name || 'paciente').replace(/\s+/g, '-')}-${format(p.date.toDate(), 'dd-MM-yyyy')}.pdf`}
+                              >
+                                {({ loading, error }) => (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className={cn(
+                                      "gap-2 rounded-xl border-primary/10 hover:bg-primary/5",
+                                      error && "border-destructive text-destructive"
+                                    )}
+                                    disabled={loading}
+                                    onClick={(e) => {
+                                      if (error) {
+                                        e.preventDefault();
+                                        toast.error('Error al generar el PDF de la receta');
+                                        console.error('PDF Error:', error);
+                                      }
+                                    }}
+                                  >
+                                    <Download className="w-4 h-4" /> {loading ? '...' : 'PDF'}
+                                  </Button>
+                                )}
+                              </PDFDownloadLink>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePrescription(p.id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-sm">
                           <div className="bg-primary/5 p-4 rounded-2xl border border-primary/5">
@@ -1350,13 +1436,11 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                                 size="icon" 
                                 className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive"
                                 onClick={async () => {
-                                  if (confirm('¿Eliminar este adjunto?')) {
-                                    try {
-                                      await deleteDoc(doc(db, 'attachments', att.id));
-                                      toast.success('Adjunto eliminado');
-                                    } catch (e) {
-                                      toast.error('Error al eliminar');
-                                    }
+                                  try {
+                                    await deleteDoc(doc(db, 'attachments', att.id));
+                                    toast.success('Adjunto eliminado');
+                                  } catch (e) {
+                                    toast.error('Error al eliminar');
                                   }
                                 }}
                               >

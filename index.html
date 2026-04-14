@@ -24,25 +24,42 @@
         }
       }
 
-      // Safety for JSON.parse("undefined")
-      const originalParse = JSON.parse;
-      JSON.parse = function(text, reviver) {
-        if (text === 'undefined') {
-          console.warn('Prevented JSON.parse("undefined")');
-          return undefined;
-        }
-        return originalParse(text, reviver);
-      };
-
-      // Fix for next-themes or other libraries storing "undefined" in localStorage
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && localStorage.getItem(key) === 'undefined') {
-            localStorage.removeItem(key);
+      // Safety for JSON.parse("undefined") and other common issues
+      (function() {
+        const originalParse = JSON.parse;
+        JSON.parse = function(text, reviver) {
+          if (text === 'undefined' || text === undefined) {
+            console.warn('Prevented JSON.parse("undefined")');
+            return undefined;
           }
-        }
-      } catch (e) {}
+          try {
+            return originalParse(text, reviver);
+          } catch (e) {
+            if (typeof text === 'string' && text.includes('undefined')) {
+              console.warn('JSON.parse failed on string containing undefined', text);
+              return undefined;
+            }
+            throw e;
+          }
+        };
+
+        // Fix for next-themes or other libraries storing "undefined" in localStorage
+        const cleanStorage = () => {
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key) {
+                const value = localStorage.getItem(key);
+                if (value === 'undefined' || value === null) {
+                  localStorage.removeItem(key);
+                }
+              }
+            }
+          } catch (e) {}
+        };
+        cleanStorage();
+        window.addEventListener('storage', cleanStorage);
+      })();
     </script>
   </head>
   <body>

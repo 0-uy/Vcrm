@@ -22,7 +22,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
-import { Appointment, AppointmentStatus } from '../types';
+import { Appointment, AppointmentStatus, Patient } from '../types';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -42,6 +42,7 @@ import { toast } from 'sonner';
 const DailyBoard: React.FC = () => {
   const { profile } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,8 +67,22 @@ const DailyBoard: React.FC = () => {
       handleFirestoreError(error, OperationType.LIST, 'appointments');
     });
 
-    return () => unsubscribe();
+    const qPatients = query(collection(db, 'patients'), where('clinicId', '==', profile.clinicId));
+    const unsubPatients = onSnapshot(qPatients, (snapshot) => {
+      setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient)));
+    });
+
+    return () => {
+      unsubscribe();
+      unsubPatients();
+    };
   }, [profile]);
+
+  const getPatientName = (app: Appointment) => {
+    if (app.patientName && app.patientName !== app.patientId) return app.patientName;
+    const p = patients.find(p => p.id === app.patientId);
+    return p?.name || 'Paciente Desconocido';
+  };
 
   const updateStatus = async (id: string, status: AppointmentStatus) => {
     try {
@@ -138,10 +153,10 @@ const DailyBoard: React.FC = () => {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary text-lg font-black shadow-inner group-hover:scale-110 transition-transform">
-                              {apt.patientName.charAt(0)}
+                              {getPatientName(apt).charAt(0)}
                             </div>
                             <div>
-                              <p className="font-black text-base tracking-tight leading-tight">{apt.patientName}</p>
+                              <p className="font-black text-base tracking-tight leading-tight">{getPatientName(apt)}</p>
                               <p className="text-[10px] font-black text-muted-foreground flex items-center gap-1.5 uppercase tracking-widest mt-1">
                                 <Clock className="w-3.5 h-3.5 text-primary/70" />
                                 {format(apt.date.toDate(), 'HH:mm')}

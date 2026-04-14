@@ -64,24 +64,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as UserProfile;
-            setProfile(userData);
-            
-            if (userData.clinicId) {
-              const clinicDoc = await getDoc(doc(db, 'clinics', userData.clinicId));
-              if (clinicDoc.exists()) {
-                setClinic({ id: clinicDoc.id, ...clinicDoc.data() } as Clinic);
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data() as UserProfile;
+              setProfile(userData);
+              
+              if (userData.clinicId) {
+                const clinicDoc = await getDoc(doc(db, 'clinics', userData.clinicId));
+                if (clinicDoc.exists()) {
+                  setClinic({ id: clinicDoc.id, ...clinicDoc.data() } as Clinic);
+                }
               }
+            } else {
+              setProfile(null);
+              setClinic(null);
             }
-          } else {
-            setProfile(null);
-            setClinic(null);
+            break; // Success, exit retry loop
+          } catch (error) {
+            retries--;
+            if (retries === 0) {
+              handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+            } else {
+              // Wait 1s before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
-        } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
         }
       } else {
         setProfile(null);
