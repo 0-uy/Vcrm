@@ -124,24 +124,24 @@ service cloud.firestore {
     }
 
     function isClinicMember(clinicId) {
-      return isSuperAdmin() || (isAuthenticated() && userExists() && getUserData().clinicId == clinicId);
+      return isSuperAdmin() || (isAuthenticated() && userExists() && getUserData().get('clinicId', '') == clinicId);
     }
 
     function isSuperAdmin() {
       return isAuthenticated() && 
              (
-               (request.auth.token.email == "imcorreamauricio@gmail.com" && request.auth.token.email_verified == true) ||
-               (request.auth.token.email == "chocolatescomferre@gmail.com" && request.auth.token.email_verified == true) ||
-               (userExists() && "role" in getUserData() && getUserData().role == "superadmin")
+               request.auth.token.email == "imcorreamauricio@gmail.com" ||
+               request.auth.token.email == "chocolatescomferre@gmail.com" ||
+               (userExists() && getUserData().get('role', 'guest') == "superadmin")
              );
     }
 
     function isClinicAdmin() {
-      return isSuperAdmin() || (isAuthenticated() && userExists() && getUserData().role == "clinic_admin");
+      return isSuperAdmin() || (isAuthenticated() && userExists() && getUserData().get('role', 'guest') == "clinic_admin");
     }
 
     function isClinicActive(clinicId) {
-      return isSuperAdmin() || (exists(/databases/$(database)/documents/clinics/$(clinicId)) && get(/databases/$(database)/documents/clinics/$(clinicId)).data.status in ['active', 'trial']);
+      return isSuperAdmin() || (exists(/databases/$(database)/documents/clinics/$(clinicId)) && get(/databases/$(database)/documents/clinics/$(clinicId)).data.get('status', 'suspended') in ['active', 'trial']);
     }
 
     function hasOnlyAllowedFields(fields) {
@@ -157,18 +157,18 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidClinic(data) {
-      return data.name is string && data.name.size() > 0 &&
-             data.joinCode is string && data.joinCode.size() == 6 &&
-             data.ownerUid is string &&
-             data.createdAt is timestamp &&
-             data.status in ['active', 'suspended', 'trial'] &&
-             data.plan is string &&
-             data.expiresAt is timestamp;
+      return data.get('name', '') is string && data.name.size() > 0 &&
+             data.get('joinCode', '') is string && data.joinCode.size() == 6 &&
+             data.get('ownerUid', '') is string &&
+             data.get('createdAt', timestamp.now()) is timestamp &&
+             data.get('status', 'trial') in ['active', 'suspended', 'trial'] &&
+             data.get('plan', 'Trial') is string &&
+             data.get('expiresAt', timestamp.now()) is timestamp;
     }
 
     function isValidUser(data) {
-      return data.uid is string &&
-             data.email is string && isValidEmail(data.email) &&
+      return data.get('uid', '') is string &&
+             data.get('email', '') is string && isValidEmail(data.email) &&
              (!('role' in data) || data.role in ['superadmin', 'clinic_admin', 'staff']) &&
              (!('clinicId' in data) || data.clinicId is string);
     }
@@ -270,7 +270,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || (userExists() && getUserData().clinicId == resource.data.clinicId) || isSuperAdmin());
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isSuperAdmin() || 
+        (resource != null && userExists() && getUserData().get('clinicId', '') == resource.data.get('clinicId', 'none'))
+      );
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
     }
