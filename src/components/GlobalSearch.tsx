@@ -69,26 +69,40 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelectPatient }) => {
       
       const patientsRef = collection(db, 'patients');
       
-      // 1. Intento de búsqueda optimizada con array-contains (búsqueda por palabras clave)
+      // 1. Búsqueda por prefijo en Nombre (Rápida y precisa)
+      const qName = query(
+        patientsRef,
+        where('clinicId', '==', clinicId),
+        orderBy('name'),
+        where('name', '>=', term),
+        where('name', '<=', term + '\uf8ff'),
+        limit(20)
+      );
+
+      // 2. Búsqueda por palabras clave (Deep Search)
       const qKeywords = query(
         patientsRef,
         where('clinicId', '==', clinicId),
         where('searchKeywords', 'array-contains', termLower),
-        limit(20)
+        limit(50)
       );
 
-      const keywordsSnap = await getDocs(qKeywords);
-      let resultsFromKeywords = keywordsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
+      const [nameSnap, keywordsSnap] = await Promise.all([
+        getDocs(qName),
+        getDocs(qKeywords)
+      ]);
 
-      // 2. Fallback: Si no hay resultados o para búsqueda parcial (includes)
-      // Traemos documentos limitados y filtramos en frontend
+      const nameResults = nameSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
+      const keywordResults = keywordsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
+
+      // 3. Fallback: Traer documentos recientes para filtrado local (soporta texto parcial en medio de palabras)
       let querySnapshot;
       try {
         const q = query(
           patientsRef,
           where('clinicId', '==', clinicId),
           orderBy('createdAt', 'desc'),
-          limit(100)
+          limit(200) // Aumentamos el límite para búsqueda más profunda
         );
         querySnapshot = await getDocs(q);
       } catch (err) {
@@ -96,15 +110,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelectPatient }) => {
         const qSimple = query(
           patientsRef,
           where('clinicId', '==', clinicId),
-          limit(100)
+          limit(200)
         );
         querySnapshot = await getDocs(qSimple);
       }
 
       const allDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Patient));
       
-      // Combinar y filtrar en frontend para soporte de texto parcial (includes)
-      const combinedDocs = Array.from(new Map([...resultsFromKeywords, ...allDocs].map(p => [p.id, p])).values());
+      // Combinar y de-duplicar
+      const combinedDocs = Array.from(new Map([...nameResults, ...keywordResults, ...allDocs].map(p => [p.id, p])).values());
       
       const getMatchSource = (p: Patient, term: string): string | null => {
         const t = term.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -115,14 +129,25 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelectPatient }) => {
         if (ownerName?.includes(t)) return "Dueño";
         if (p.ownerPhone?.includes(t)) return "Teléfono";
         
-        // Si no es ninguno de los anteriores, debe venir de la ficha médica
+        // Revisar otros campos del paciente
+        if (p.species?.toLowerCase().includes(t)) return "Especie";
+        if (p.race?.toLowerCase().includes(t)) return "Raza";
+        if (p.observations?.toLowerCase().includes(t)) return "Observaciones";
+        if (p.allergies?.toLowerCase().includes(t)) return "Alergias";
+        if (p.medicalHistory?.toLowerCase().includes(t)) return "Historial";
+        if (p.currentMedication?.toLowerCase().includes(t)) return "Medicación Actual";
+        
+        // Si no es ninguno de los anteriores, debe venir de la ficha médica (subcolecciones)
         return "Ficha Médica / Receta";
       };
 
       const filteredPatients = combinedDocs
         .filter(p => 
           p.name?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termLower) ||
-          p.searchKeywords?.some(kw => kw.includes(termLower))
+          p.searchKeywords?.some(kw => kw.includes(termLower)) ||
+          p.observations?.toLowerCase().includes(termLower) ||
+          p.medicalHistory?.toLowerCase().includes(termLower) ||
+          p.currentMedication?.toLowerCase().includes(termLower)
         )
         .map(p => ({ ...p, _matchSource: getMatchSource(p, termLower) }));
 

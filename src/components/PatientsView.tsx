@@ -103,6 +103,14 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
         data.name,
         data.ownerName,
         data.ownerPhone,
+        data.species,
+        data.race,
+        data.observations,
+        data.allergies,
+        data.medicalHistory,
+        data.currentMedication,
+        data.ownerAddress,
+        data.ownerNeighborhood
       ]);
 
       const docRef = await addDoc(collection(db, 'patients'), {
@@ -152,6 +160,14 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
         data.name,
         data.ownerName,
         data.ownerPhone,
+        data.species,
+        data.race,
+        data.observations,
+        data.allergies,
+        data.medicalHistory,
+        data.currentMedication,
+        data.ownerAddress,
+        data.ownerNeighborhood
       ]);
 
       await updateDoc(doc(db, 'patients', id), {

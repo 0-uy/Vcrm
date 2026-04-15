@@ -77,15 +77,15 @@ export function generateSearchKeywords(texts: (string | undefined | null)[]): st
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
     
-    // Split into words and add each word
-    const words = normalized.split(/[\s,._-]+/).filter(w => w.length >= 2);
+    // Split into words by any non-alphanumeric character
+    const words = normalized.split(/[^a-z0-9]+/).filter(w => w.length >= 2);
     words.forEach(word => keywords.add(word));
     
     // Also add the full normalized string if it's short enough or relevant
-    if (normalized.length >= 2 && normalized.length < 50) {
+    if (normalized.length >= 2 && normalized.length < 100) {
       keywords.add(normalized);
     }
   });
   
-  return Array.from(keywords);
+  return Array.from(keywords).slice(0, 150);
 }
