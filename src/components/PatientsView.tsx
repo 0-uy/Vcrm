@@ -15,7 +15,8 @@ import {
   Edit2,
   ChevronRight,
   Users,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { 
   collection, 
@@ -27,7 +28,9 @@ import {
   deleteDoc, 
   doc, 
   Timestamp,
-  orderBy
+  orderBy,
+  getDocs,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
@@ -73,6 +76,62 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
   const [newPatient, setNewPatient] = useState<Partial<Patient>>({
     species: 'Perro',
   });
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncSearch = async () => {
+    if (!profile || isSyncing) return;
+    
+    setIsSyncing(true);
+    const toastId = toast.loading('Sincronizando búsqueda profunda...');
+    
+    try {
+      const patientsRef = collection(db, 'patients');
+      const q = query(patientsRef, where('clinicId', '==', profile.clinicId));
+      const snapshot = await getDocs(q);
+      
+      const batch = writeBatch(db);
+      let count = 0;
+
+      for (const patientDoc of snapshot.docs) {
+        const p = patientDoc.data() as Patient;
+        
+        // Fetch history, prescriptions and soap notes for this patient to index them
+        const historySnap = await getDocs(collection(db, 'patients', patientDoc.id, 'history'));
+        const prescriptionsSnap = await getDocs(query(collection(db, 'prescriptions'), where('patientId', '==', patientDoc.id)));
+        const soapSnap = await getDocs(query(collection(db, 'soap_notes'), where('patientId', '==', patientDoc.id)));
+
+        const historyTexts = historySnap.docs.map(d => d.data().description);
+        const prescriptionTexts = prescriptionsSnap.docs.map(d => d.data().medication);
+        const soapTexts = soapSnap.docs.map(d => d.data().assessment);
+
+        const searchKeywords = generateSearchKeywords([
+          p.name,
+          p.ownerName,
+          p.ownerPhone,
+          p.species,
+          p.race,
+          p.observations,
+          p.allergies,
+          p.medicalHistory,
+          p.currentMedication,
+          ...historyTexts,
+          ...prescriptionTexts,
+          ...soapTexts
+        ]);
+
+        batch.update(patientDoc.ref, { searchKeywords });
+        count++;
+      }
+
+      await batch.commit();
+      toast.success(`Sincronización completada: ${count} pacientes actualizados.`, { id: toastId });
+    } catch (error) {
+      console.error('Error syncing search:', error);
+      toast.error('Error al sincronizar la búsqueda.', { id: toastId });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (!profile) return;
@@ -232,13 +291,25 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
           <p className="text-muted-foreground font-medium">Gestiona la base de datos de mascotas y sus dueños.</p>
         </div>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shadow-lg shadow-primary/20 rounded-xl px-6">
-              <Plus className="w-4 h-4" /> Nuevo Paciente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[700px] glass border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleSyncSearch} 
+            disabled={isSyncing}
+            className="rounded-xl border-primary/10 hover:bg-primary/5 h-11 w-11"
+            title="Sincronizar búsqueda profunda"
+          >
+            <RefreshCw className={cn("w-5 h-5 text-primary", isSyncing && "animate-spin")} />
+          </Button>
+
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shadow-lg shadow-primary/20 rounded-xl px-6 h-11">
+                <Plus className="w-4 h-4" /> Nuevo Paciente
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[700px] glass border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
             <div className="p-8">
               <DialogHeader className="mb-6">
                 <DialogTitle className="text-3xl font-black tracking-tight">Nuevo Paciente</DialogTitle>
@@ -273,8 +344,9 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
-      {/* Search and Filters */}
+    {/* Search and Filters */}
       <div className="relative group max-w-2xl">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 

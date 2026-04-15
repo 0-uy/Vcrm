@@ -79,13 +79,26 @@ export function generateSearchKeywords(texts: (string | undefined | null)[]): st
     
     // Split into words by any non-alphanumeric character
     const words = normalized.split(/[^a-z0-9]+/).filter(w => w.length >= 2);
-    words.forEach(word => keywords.add(word));
+    words.forEach(word => {
+      keywords.add(word);
+      // Add prefixes for search (up to 15 chars)
+      for (let i = 2; i <= Math.min(word.length, 15); i++) {
+        keywords.add(word.substring(0, i));
+      }
+    });
     
     // Also add the full normalized string if it's short enough or relevant
     if (normalized.length >= 2 && normalized.length < 100) {
       keywords.add(normalized);
+      // Add prefixes for the whole string too
+      for (let i = 2; i <= Math.min(normalized.length, 15); i++) {
+        keywords.add(normalized.substring(0, i));
+      }
     }
   });
   
-  return Array.from(keywords).slice(0, 150);
+  // Firestore has a limit of 10 index entries per array-contains query? 
+  // No, the limit is on the number of elements in the array (max 1MB per doc, but index limits apply).
+  // Usually 100-200 keywords is fine.
+  return Array.from(keywords).slice(0, 250);
 }

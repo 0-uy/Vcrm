@@ -21,11 +21,20 @@ import { Card, CardContent } from './components/ui/card';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationCenter from './components/NotificationCenter';
 import GlobalSearch from './components/GlobalSearch';
+import LandingPage from './components/LandingPage';
 
 export default function App() {
   const { user, profile, clinic, loading, isAuthReady } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
+
+  // Reset showLogin when user logs out to return to Landing Page
+  React.useEffect(() => {
+    if (!user) {
+      setShowLogin(false);
+    }
+  }, [user]);
 
   const isSuspended = clinic?.status === 'suspended' && profile?.role !== 'superadmin';
 
@@ -60,12 +69,15 @@ export default function App() {
   }
 
   if (!user || !profile) {
-    return (
-      <>
-        <LoginView />
-        <Toaster position="top-center" richColors />
-      </>
-    );
+    if (showLogin) {
+      return (
+        <>
+          <LoginView onBack={() => setShowLogin(false)} />
+          <Toaster position="top-center" richColors />
+        </>
+      );
+    }
+    return <LandingPage onEnter={() => setShowLogin(true)} />;
   }
 
   if (isSuspended) {

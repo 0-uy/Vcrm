@@ -65,7 +65,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onSelectPatient }) => {
 
     try {
       const clinicId = profile.clinicId;
-      const termLower = term.toLowerCase();
+      const termLower = term.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       
       const patientsRef = collection(db, 'patients');
       

@@ -14,10 +14,14 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { toast } from 'sonner';
-import { Stethoscope, Building2, UserPlus, ArrowRight } from 'lucide-react';
+import { Stethoscope, Building2, UserPlus, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
-const LoginView: React.FC = () => {
+interface LoginViewProps {
+  onBack?: () => void;
+}
+
+const LoginView: React.FC<LoginViewProps> = ({ onBack }) => {
   const { user, profile } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -257,7 +261,17 @@ const LoginView: React.FC = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <Card className="w-full max-w-[420px] border-none shadow-2xl rounded-[2.5rem] overflow-hidden animate-in fade-in zoom-in duration-700">
+      <Card className="w-full max-w-[420px] border-none shadow-2xl rounded-[2.5rem] overflow-hidden animate-in fade-in zoom-in duration-700 relative">
+        {onBack && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-6 left-6 rounded-full hover:bg-primary/10"
+            onClick={onBack}
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        )}
         <CardHeader className="space-y-2 text-center pt-10 pb-6">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/30 rotate-3 animate-in slide-in-from-top-4 duration-1000">
