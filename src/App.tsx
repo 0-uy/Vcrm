@@ -19,19 +19,13 @@ import { signOut } from 'firebase/auth';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
 import { motion, AnimatePresence } from 'motion/react';
-import { syncNotifications } from './lib/notification-service';
 import NotificationCenter from './components/NotificationCenter';
+import GlobalSearch from './components/GlobalSearch';
 
 export default function App() {
   const { user, profile, clinic, loading, isAuthReady } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-
-  React.useEffect(() => {
-    if (isAuthReady && profile?.clinicId) {
-      syncNotifications(profile.clinicId);
-    }
-  }, [isAuthReady, profile?.clinicId]);
 
   const isSuspended = clinic?.status === 'suspended' && profile?.role !== 'superadmin';
 
@@ -230,14 +224,21 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Sidebar activeTab={activeTab} setActiveTab={(tab) => {
-        setActiveTab(tab);
-        setSelectedPatient(null);
-      }} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setSelectedPatient(null);
+        }} 
+        onSelectPatient={setSelectedPatient}
+      />
       
       <main className="md:pl-64 min-h-screen">
         <div className="container mx-auto p-4 md:p-8 max-w-7xl">
-          <div className="flex justify-end mb-6 md:hidden">
+          <div className="flex items-center justify-between gap-4 mb-6 md:hidden">
+            <div className="flex-1">
+              <GlobalSearch onSelectPatient={setSelectedPatient} />
+            </div>
             <NotificationCenter />
           </div>
           <AnimatePresence mode="wait">

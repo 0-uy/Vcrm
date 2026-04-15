@@ -76,9 +76,11 @@ import { es } from 'date-fns/locale';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import PrescriptionPDF from './PrescriptionPDF';
 import MedicalRecordPDF from './MedicalRecordPDF';
+import WeightChart from './WeightChart';
 
 import PatientForm from './PatientForm';
-import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
+import { handleFirestoreError, OperationType, logActivity, generateSearchKeywords } from '../lib/firestore-utils';
+import { scheduleVaccineNotification, scheduleTreatmentNotification } from '../lib/notification-service';
 
 interface PatientDetailViewProps {
   patient: Patient;
@@ -106,6 +108,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
   const [newEvent, setNewEvent] = useState<Partial<ClinicalEvent>>({
     type: 'consultation',
     date: Timestamp.now(),
+    weight: patient.weight,
   });
   const [newCharge, setNewCharge] = useState<Partial<Charge>>({
     concept: 'Consulta',
@@ -242,15 +245,34 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         patientId: patient.id,
         patientName: patient.name,
         clinicId: profile.clinicId,
+        weight: newEvent.weight || null,
+        height: newEvent.height || null,
       });
 
       // 2. Update patient metadata
+      const searchKeywords = generateSearchKeywords([
+        patient.name,
+        patient.ownerName,
+        patient.ownerPhone,
+        newEvent.description,
+        ...(history.map(e => e.description)),
+        ...(prescriptions.map(p => p.medication)),
+        ...(soapNotes.map(s => s.assessment))
+      ]);
+
       const patientUpdate: any = {
-        lastVisitAt: newEvent.date || Timestamp.now()
+        lastVisitAt: newEvent.date || Timestamp.now(),
+        searchKeywords
       };
+      if (newEvent.weight) {
+        patientUpdate.weight = newEvent.weight;
+      }
       if (newEvent.type === 'vaccine' && newEvent.nextDate) {
         patientUpdate.nextVaccineDate = newEvent.nextDate;
         
+        // Schedule notification
+        await scheduleVaccineNotification(profile.clinicId, patient, newEvent.description || 'Vacuna', newEvent.nextDate.toDate());
+
         // 2b. Add to root vaccines collection for clinic-wide alerts
         await addDoc(collection(db, 'vaccines'), {
           patientId: patient.id,
@@ -288,9 +310,19 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
     }
 
     try {
+      const searchKeywords = generateSearchKeywords([
+        data.name,
+        data.ownerName,
+        data.ownerPhone,
+        ...(history.map(e => e.description)),
+        ...(prescriptions.map(p => p.medication)),
+        ...(soapNotes.map(s => s.assessment))
+      ]);
+
       await updateDoc(doc(db, 'patients', patient.id), {
         ...data,
         updatedAt: Timestamp.now(),
+        searchKeywords
       });
 
       // Handle new attachments
@@ -385,6 +417,18 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         date: Timestamp.now(),
       });
 
+      // Update patient keywords
+      const searchKeywords = generateSearchKeywords([
+        patient.name,
+        patient.ownerName,
+        patient.ownerPhone,
+        newPrescription.medication,
+        ...(history.map(e => e.description)),
+        ...(prescriptions.map(p => p.medication)),
+        ...(soapNotes.map(s => s.assessment))
+      ]);
+      await updateDoc(doc(db, 'patients', patient.id), { searchKeywords });
+
       await logActivity({
         type: 'treatment',
         description: `Nueva receta para ${patient.name}: ${newPrescription.medication}`,
@@ -392,6 +436,9 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         patientName: patient.name,
         clinicId: profile.clinicId,
       });
+
+      // Schedule treatment notification
+      await scheduleTreatmentNotification(profile.clinicId, patient, newPrescription.medication);
 
       setIsAddPrescriptionOpen(false);
       setNewPrescription({ medication: '', dose: '', frequency: '', duration: '', date: Timestamp.now() });
@@ -423,6 +470,18 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
         clinicId: profile.clinicId,
         date: Timestamp.now(),
       });
+
+      // Update patient keywords
+      const searchKeywords = generateSearchKeywords([
+        patient.name,
+        patient.ownerName,
+        patient.ownerPhone,
+        newSOAP.assessment,
+        ...(history.map(e => e.description)),
+        ...(prescriptions.map(p => p.medication)),
+        ...(soapNotes.map(s => s.assessment))
+      ]);
+      await updateDoc(doc(db, 'patients', patient.id), { searchKeywords });
 
       await logActivity({
         type: 'consultation',
@@ -622,6 +681,32 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
                     />
                   </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="weight" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Peso (kg)</Label>
+                    <Input 
+                      id="weight" 
+                      type="number" 
+                      step="0.1"
+                      placeholder="0.0" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                      value={newEvent.weight || ''}
+                      onChange={e => setNewEvent({...newEvent, weight: Number(e.target.value)})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="height" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Talla (cm)</Label>
+                    <Input 
+                      id="height" 
+                      type="number" 
+                      placeholder="0" 
+                      className="rounded-xl bg-primary/5 border-primary/10 focus:bg-background transition-all"
+                      value={newEvent.height || ''}
+                      onChange={e => setNewEvent({...newEvent, height: Number(e.target.value)})}
+                    />
+                  </div>
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Descripción / Notas</Label>
@@ -1172,7 +1257,9 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({ patient, onBack }
               <TabsTrigger value="billing" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Facturas</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="history" className="mt-8">
+            <TabsContent value="history" className="mt-8 space-y-8">
+              <WeightChart history={history} />
+              
               <div className="flex justify-end mb-4">
                 {isMounted && patient && (history.length > 0 || soapNotes.length > 0) && (
                   <PDFDownloadLink

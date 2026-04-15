@@ -54,6 +54,7 @@ import { format, startOfDay, endOfDay, addDays, subDays, isSameDay } from 'date-
 import { es } from 'date-fns/locale';
 
 import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
+import { scheduleAppointmentNotification } from '../lib/notification-service';
 
 const AppointmentsView: React.FC = () => {
   const { profile } = useAuth();
@@ -102,11 +103,16 @@ const AppointmentsView: React.FC = () => {
     const patient = patients.find(p => p.id === newAppointment.patientId);
 
     try {
-      await addDoc(collection(db, 'appointments'), {
+      const docRef = await addDoc(collection(db, 'appointments'), {
         ...newAppointment,
         patientName: patient?.name || 'Desconocido',
         clinicId: profile.clinicId,
       });
+
+      // Schedule notification
+      if (patient) {
+        await scheduleAppointmentNotification(profile.clinicId, { id: docRef.id, ...newAppointment } as Appointment, patient);
+      }
 
       // Add to global activity
       await logActivity({
@@ -193,9 +199,13 @@ const AppointmentsView: React.FC = () => {
               <h3 className="font-black text-xl tracking-tight group-hover:text-primary transition-colors">
                 {getPatientName(app)}
               </h3>
-              {app.isHomeVisit && (
+              {app.isHomeVisit ? (
                 <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-none gap-1.5 rounded-lg px-3 py-1 font-black text-[10px] uppercase tracking-widest">
                   <Home className="w-3 h-3" /> Domicilio
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-primary/5 text-primary border-none gap-1.5 rounded-lg px-3 py-1 font-black text-[10px] uppercase tracking-widest">
+                  <MapPin className="w-3 h-3" /> Consultorio
                 </Badge>
               )}
             </div>
@@ -358,17 +368,32 @@ const AppointmentsView: React.FC = () => {
                     onChange={e => setNewAppointment({...newAppointment, reason: e.target.value})}
                   />
                 </div>
-                <div className="flex items-center space-x-3 pt-2 bg-primary/5 p-4 rounded-2xl border border-primary/5">
-                  <input 
-                    type="checkbox" 
-                    id="homeVisit" 
-                    className="h-5 w-5 rounded-lg border-primary/20 text-primary focus:ring-primary bg-background"
-                    checked={newAppointment.isHomeVisit || false}
-                    onChange={e => setNewAppointment({...newAppointment, isHomeVisit: e.target.checked})}
-                  />
-                  <Label htmlFor="homeVisit" className="text-sm font-bold leading-none cursor-pointer">
-                    Consulta a domicilio
-                  </Label>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Tipo de Cita</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      type="button"
+                      variant={newAppointment.isHomeVisit ? "outline" : "default"}
+                      className={cn(
+                        "rounded-xl h-12 gap-2 font-bold",
+                        !newAppointment.isHomeVisit && "shadow-lg shadow-primary/20"
+                      )}
+                      onClick={() => setNewAppointment({...newAppointment, isHomeVisit: false})}
+                    >
+                      <MapPin className="w-4 h-4" /> Consultorio
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={newAppointment.isHomeVisit ? "default" : "outline"}
+                      className={cn(
+                        "rounded-xl h-12 gap-2 font-bold",
+                        newAppointment.isHomeVisit && "shadow-lg shadow-primary/20"
+                      )}
+                      onClick={() => setNewAppointment({...newAppointment, isHomeVisit: true})}
+                    >
+                      <Home className="w-4 h-4" /> Domicilio
+                    </Button>
+                  </div>
                 </div>
               </div>
               <DialogFooter className="gap-2">

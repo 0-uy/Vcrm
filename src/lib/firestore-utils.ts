@@ -64,3 +64,28 @@ export async function logActivity(activity: Omit<ActivityEvent, 'id' | 'date'>) 
     console.error('Error logging activity:', error);
   }
 }
+
+export function generateSearchKeywords(texts: (string | undefined | null)[]): string[] {
+  const keywords = new Set<string>();
+  
+  texts.forEach(text => {
+    if (!text) return;
+    
+    // Normalize: lowercase, remove accents
+    const normalized = text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    
+    // Split into words and add each word
+    const words = normalized.split(/[\s,._-]+/).filter(w => w.length >= 2);
+    words.forEach(word => keywords.add(word));
+    
+    // Also add the full normalized string if it's short enough or relevant
+    if (normalized.length >= 2 && normalized.length < 50) {
+      keywords.add(normalized);
+    }
+  });
+  
+  return Array.from(keywords);
+}

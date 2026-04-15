@@ -47,6 +47,7 @@ export interface Patient {
   createdAt: Timestamp;
   lastVisitAt?: Timestamp;
   nextVaccineDate?: Timestamp;
+  searchKeywords?: string[];
 }
 
 export type ClinicalEventType = 'consultation' | 'vaccine' | 'treatment' | 'note';
@@ -59,6 +60,8 @@ export interface ClinicalEvent {
   type: ClinicalEventType;
   description: string;
   nextDate?: Timestamp;
+  weight?: number; // Added for evolution tracking
+  height?: number; // Added for evolution tracking (talla)
   clinicId: string;
 }
 

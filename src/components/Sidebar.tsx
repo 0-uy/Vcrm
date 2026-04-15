@@ -27,13 +27,16 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from 'next-themes';
 import NotificationCenter from './NotificationCenter';
+import GlobalSearch from './GlobalSearch';
+import { Patient } from '../types';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onSelectPatient: (patient: Patient) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onSelectPatient }) => {
   const { profile } = useAuth();
   const [isOpen, setIsOpen] = React.useState(false);
   const { theme, setTheme } = useTheme();
@@ -96,6 +99,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
               <div className="hidden md:block">
                 <NotificationCenter />
               </div>
+            </div>
+
+            <div className="mb-6">
+              <GlobalSearch onSelectPatient={onSelectPatient} />
             </div>
 
             <nav className="space-y-1.5">

@@ -32,7 +32,7 @@ import {
 import { db } from '../firebase';
 import { useAuth } from './AuthProvider';
 import { Patient } from '../types';
-import { handleFirestoreError, OperationType, logActivity } from '../lib/firestore-utils';
+import { handleFirestoreError, OperationType, logActivity, generateSearchKeywords } from '../lib/firestore-utils';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
@@ -99,10 +99,17 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
     }
 
     try {
+      const searchKeywords = generateSearchKeywords([
+        data.name,
+        data.ownerName,
+        data.ownerPhone,
+      ]);
+
       const docRef = await addDoc(collection(db, 'patients'), {
         ...data,
         clinicId: profile.clinicId,
         createdAt: Timestamp.now(),
+        searchKeywords,
       });
 
       // Handle attachments (simulated)
@@ -141,9 +148,16 @@ const PatientsView: React.FC<PatientsViewProps> = ({ onSelectPatient }) => {
 
     try {
       const { id } = editingPatient;
+      const searchKeywords = generateSearchKeywords([
+        data.name,
+        data.ownerName,
+        data.ownerPhone,
+      ]);
+
       await updateDoc(doc(db, 'patients', id), {
         ...data,
         updatedAt: Timestamp.now(),
+        searchKeywords,
       });
 
       // Handle new attachments
