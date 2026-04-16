@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './components/AuthProvider';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -29,8 +29,15 @@ export default function App() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showLogin, setShowLogin] = useState(false);
 
+  // Redirección automática si el usuario es SuperAdmin
+  useEffect(() => {
+    if (profile?.role === 'superadmin') {
+      setActiveTab('superadmin');
+    }
+  }, [profile]);
+
   // Reset showLogin when user logs out to return to Landing Page
-  React.useEffect(() => {
+  useEffect(() => {
     if (!user) {
       setShowLogin(false);
     }
@@ -41,7 +48,6 @@ export default function App() {
   if (!isAuthReady || loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background relative overflow-hidden">
-        {/* Decorative background elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
@@ -83,7 +89,6 @@ export default function App() {
   if (isSuspended) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-4">
-        {/* Decorative background elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-destructive/10 rounded-full blur-[120px]" />
         </div>
