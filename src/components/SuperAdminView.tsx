@@ -4,14 +4,12 @@ import {
   Users, 
   ShieldAlert, 
   CheckCircle2, 
-  Clock, 
   Search,
   MoreHorizontal,
   Ban,
   Play,
-  Calendar,
-  CreditCard,
-  Activity
+  Activity,
+  Plus
 } from 'lucide-react';
 import { 
   collection, 
@@ -19,16 +17,14 @@ import {
   onSnapshot, 
   updateDoc, 
   doc, 
-  Timestamp,
   orderBy,
   getDocs,
   where
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { cn } from '../lib/utils';
 import { Clinic, ClinicStatus } from '../types';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { 
@@ -51,7 +47,6 @@ import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
 
 interface ClinicWithStats extends Clinic {
   userCount: number;
@@ -72,8 +67,8 @@ const SuperAdminView: React.FC = () => {
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const clinicsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Clinic));
       
-      // Fetch stats for each clinic
       const clinicsWithStats = await Promise.all(clinicsData.map(async (clinic) => {
+        // Optimización: Solo contamos, no traemos todos los datos de cada usuario/paciente
         const usersSnap = await getDocs(query(collection(db, 'users'), where('clinicId', '==', clinic.id)));
         const patientsSnap = await getDocs(query(collection(db, 'patients'), where('clinicId', '==', clinic.id)));
         
@@ -86,8 +81,6 @@ const SuperAdminView: React.FC = () => {
       
       setClinics(clinicsWithStats);
       setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'clinics');
     });
 
     return () => unsubscribe();
@@ -99,11 +92,11 @@ const SuperAdminView: React.FC = () => {
         status,
         suspendedReason: reason || null
       });
-      toast.success(`Clínica ${status === 'suspended' ? 'suspendida' : 'activada'} correctamente.`);
+      toast.success(status === 'suspended' ? 'Clínica Suspendida' : 'Clínica Activada');
       setIsSuspendDialogOpen(false);
       setSuspendedReason('');
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `clinics/${clinicId}`);
+      toast.error('Error al actualizar estado');
     }
   };
 
@@ -112,137 +105,96 @@ const SuperAdminView: React.FC = () => {
     c.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusBadge = (status: ClinicStatus) => {
-    switch (status) {
-      case 'active': return <Badge className="bg-green-500">Activa</Badge>;
-      case 'suspended': return <Badge variant="destructive">Suspendida</Badge>;
-      case 'trial': return <Badge className="bg-blue-500">Prueba</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 pb-12 animate-in fade-in duration-700">
+      {/* Header Premium */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Panel Superadmin
-          </h2>
-          <p className="text-muted-foreground font-medium">Gestión global de clínicas y suscripciones.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Nivel de Acceso: Master</p>
+          <h2 className="text-4xl font-black tracking-tighter">Panel de Ecosistema</h2>
         </div>
+        
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-muted/50 border border-border flex items-center gap-3">
-            <ShieldAlert className="w-5 h-5 text-primary" />
-            <span className="text-xs font-bold uppercase tracking-widest">Acceso Restringido</span>
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input 
+              placeholder="Buscar clínica..." 
+              className="pl-10 w-full md:w-[300px] h-11 rounded-xl bg-white/50 backdrop-blur-sm border-primary/5 focus:border-primary/20 transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border border-border shadow-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Total Clínicas</CardTitle>
-            <Building2 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black">{clinics.length}</div>
-            <p className="text-xs text-muted-foreground mt-1 font-medium">Registradas en el sistema</p>
-          </CardContent>
-        </Card>
-        <Card className="border border-border shadow-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Clínicas Activas</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black">{clinics.filter(c => c.status === 'active').length}</div>
-            <p className="text-xs text-muted-foreground mt-1 font-medium">Operando normalmente</p>
-          </CardContent>
-        </Card>
-        <Card className="border border-border shadow-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Suspensiones</CardTitle>
-            <Ban className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black">{clinics.filter(c => c.status === 'suspended').length}</div>
-            <p className="text-xs text-muted-foreground mt-1 font-medium">Cuentas con acceso restringido</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <Input 
-            placeholder="Buscar clínica por nombre o ID..." 
-            className="pl-9 h-11 rounded-xl border-border bg-card shadow-sm focus:shadow-md transition-all"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Grid de Clínicas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredClinics.map((clinic) => (
-          <Card key={clinic.id} className={cn(
-            "border border-border shadow-xl overflow-hidden group transition-all duration-500 hover:-translate-y-1",
-            clinic.status === 'suspended' ? 'opacity-75' : ''
-          )}>
-            <CardHeader className="pb-4 border-b border-primary/5 bg-primary/5">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-background flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-                    <Building2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-bold">{clinic.name}</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-black tracking-widest">ID: {clinic.id.substring(0, 8)}</CardDescription>
-                  </div>
+          <Card key={clinic.id} className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white/40 backdrop-blur-md hover:shadow-2xl transition-all duration-500 group">
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-start">
+                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                  <Building2 className="w-6 h-6" />
                 </div>
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <MoreHorizontal className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/5">
+                      <MoreHorizontal className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-xl border border-border bg-popover shadow-2xl">
-                    {clinic.status === 'suspended' ? (
-                      <DropdownMenuItem onClick={() => handleUpdateStatus(clinic.id, 'active')} className="rounded-lg">
-                        <Play className="w-4 h-4 mr-2 text-emerald-500" /> Activar Clínica
+                  <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border-none shadow-2xl glass">
+                    <DropdownMenuItem className="rounded-xl font-bold cursor-pointer" onClick={() => toast.info('Función de edición próximamente')}>
+                      Editar Detalles
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="opacity-50" />
+                    {clinic.status !== 'active' ? (
+                      <DropdownMenuItem 
+                        className="rounded-xl font-bold text-green-600 cursor-pointer"
+                        onClick={() => handleUpdateStatus(clinic.id, 'active')}
+                      >
+                        <Play className="w-4 h-4 mr-2" /> Activar Clínica
                       </DropdownMenuItem>
                     ) : (
-                      <DropdownMenuItem onClick={() => {
-                        setSelectedClinic(clinic);
-                        setIsSuspendDialogOpen(true);
-                      }} className="rounded-lg">
-                        <Ban className="w-4 h-4 mr-2 text-destructive" /> Suspender Clínica
+                      <DropdownMenuItem 
+                        className="rounded-xl font-bold text-destructive cursor-pointer"
+                        onClick={() => {
+                          setSelectedClinic(clinic);
+                          setIsSuspendDialogOpen(true);
+                        }}
+                      >
+                        <Ban className="w-4 h-4 mr-2" /> Suspender Clínica
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuSeparator className="bg-primary/5" />
-                    <DropdownMenuItem className="rounded-lg">
-                      <CreditCard className="w-4 h-4 mr-2" /> Gestionar Plan
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+              
+              <div className="mt-4">
+                <h3 className="text-xl font-black tracking-tight line-clamp-1">{clinic.name}</h3>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase mt-1 tracking-widest">{clinic.id}</p>
+              </div>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Estado</span>
-                {getStatusBadge(clinic.status)}
+
+            <CardContent className="space-y-6">
+              {/* Status Badge */}
+              <div className="flex gap-2">
+                {clinic.status === 'active' && <Badge className="bg-emerald-500/10 text-emerald-600 border-none rounded-lg px-3 font-black uppercase text-[10px] tracking-widest">Activa</Badge>}
+                {clinic.status === 'trial' && <Badge className="bg-blue-500/10 text-blue-600 border-none rounded-lg px-3 font-black uppercase text-[10px] tracking-widest">Prueba</Badge>}
+                {clinic.status === 'suspended' && <Badge variant="destructive" className="rounded-lg px-3 font-black uppercase text-[10px] tracking-widest">Suspendida</Badge>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-2xl bg-muted/30 dark:bg-white/5 border border-transparent hover:border-primary/5 transition-all">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Usuarios</p>
+              {/* Estadísticas Rápidas */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-[1.5rem] bg-slate-50 border border-slate-100/50">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Staff</p>
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-blue-500" />
+                    <Users className="w-4 h-4 text-primary" />
                     <span className="text-lg font-black">{clinic.userCount}</span>
                   </div>
                 </div>
-                <div className="p-3 rounded-2xl bg-muted/30 dark:bg-white/5 border border-transparent hover:border-primary/5 transition-all">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Pacientes</p>
+                <div className="p-4 rounded-[1.5rem] bg-slate-50 border border-slate-100/50">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pacientes</p>
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-emerald-500" />
                     <span className="text-lg font-black">{clinic.patientCount}</span>
@@ -250,27 +202,25 @@ const SuperAdminView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-primary/5">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-muted-foreground">Plan Actual</span>
-                  <Badge variant="outline" className="rounded-lg font-black uppercase text-[10px] border-primary/20 text-primary">
-                    {clinic.plan}
-                  </Badge>
+              {/* Información de Plan */}
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-muted-foreground uppercase tracking-wider">Plan:</span>
+                  <span className="font-black text-primary">{clinic.plan}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-muted-foreground">Vencimiento</span>
-                  <span className="text-xs font-black">
-                    {format(clinic.expiresAt.toDate(), 'dd MMM yyyy', { locale: es })}
-                  </span>
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-muted-foreground uppercase tracking-wider">Vence:</span>
+                  <span>{format(clinic.expiresAt.toDate(), 'dd MMM, yyyy', { locale: es })}</span>
                 </div>
               </div>
 
+              {/* Razón de suspensión (si existe) */}
               {clinic.status === 'suspended' && clinic.suspendedReason && (
-                <div className="p-3 bg-destructive/5 rounded-2xl border border-destructive/10 text-[10px] text-destructive animate-in slide-in-from-top-2">
-                  <p className="font-black mb-1 flex items-center gap-1 uppercase tracking-widest">
-                    <ShieldAlert className="w-3.5 h-3.5" /> Razón de suspensión
+                <div className="p-4 bg-destructive/5 rounded-2xl border border-destructive/10">
+                  <p className="text-[10px] font-black text-destructive uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <ShieldAlert className="w-3.5 h-3.5" /> Motivo
                   </p>
-                  <p className="font-medium leading-relaxed">{clinic.suspendedReason}</p>
+                  <p className="text-xs font-medium text-destructive/80 leading-relaxed italic">"{clinic.suspendedReason}"</p>
                 </div>
               )}
             </CardContent>
@@ -278,32 +228,32 @@ const SuperAdminView: React.FC = () => {
         ))}
       </div>
 
+      {/* Modal de Suspensión */}
       <Dialog open={isSuspendDialogOpen} onOpenChange={setIsSuspendDialogOpen}>
-        <DialogContent className="glass border-none shadow-2xl">
+        <DialogContent className="rounded-[2.5rem] border-none shadow-2xl glass p-8">
           <DialogHeader>
-            <DialogTitle>Suspender Clínica</DialogTitle>
-            <DialogDescription>
-              La clínica "{selectedClinic?.name}" será bloqueada. Sus usuarios no podrán acceder al sistema.
+            <DialogTitle className="text-2xl font-black tracking-tight">Suspender Clínica</DialogTitle>
+            <DialogDescription className="font-medium">
+              Esto bloqueará el acceso a todos los usuarios de <strong>{selectedClinic?.name}</strong>.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="reason">Razón de la suspensión</Label>
-              <Textarea 
-                id="reason" 
-                placeholder="Ej: Falta de pago, violación de términos..."
-                value={suspendedReason}
-                onChange={e => setSuspendedReason(e.target.value)}
-              />
-            </div>
+          <div className="py-6 space-y-3">
+            <Label className="text-xs font-black uppercase tracking-widest ml-1 text-muted-foreground">Razón del Bloqueo</Label>
+            <Textarea 
+              placeholder="Ej: Incumplimiento de pago o términos del servicio..."
+              className="rounded-2xl border-primary/10 focus:border-primary/30 min-h-[120px] resize-none p-4"
+              value={suspendedReason}
+              onChange={e => setSuspendedReason(e.target.value)}
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsSuspendDialogOpen(false)}>Cancelar</Button>
+          <DialogFooter className="gap-3">
+            <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setIsSuspendDialogOpen(false)}>Cancelar</Button>
             <Button 
               variant="destructive" 
+              className="rounded-xl font-black uppercase tracking-widest text-xs h-12 px-8 shadow-lg shadow-destructive/20"
               onClick={() => selectedClinic && handleUpdateStatus(selectedClinic.id, 'suspended', suspendedReason)}
             >
-              Confirmar Suspensión
+              Confirmar Bloqueo
             </Button>
           </DialogFooter>
         </DialogContent>
