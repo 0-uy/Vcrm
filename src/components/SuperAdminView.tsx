@@ -97,6 +97,7 @@ const SuperAdminView: React.FC = () => {
       setSuspendedReason('');
     } catch (error) {
       toast.error('Error al actualizar estado');
+      
     }
   };
 
