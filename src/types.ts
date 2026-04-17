@@ -10,7 +10,7 @@ export interface UserProfile {
   clinicId: string;
 }
 
-export type ClinicStatus = 'active' | 'suspended' | 'trial';
+export type ClinicStatus = 'active' | 'suspended' | 'trial' | 'expired';
 
 export interface Clinic {
   id: string;
@@ -22,6 +22,7 @@ export interface Clinic {
   plan: string;
   expiresAt: Timestamp;
   suspendedReason?: string;
+  email?: string; // Contact email for the clinic
 }
 
 export interface Patient {
