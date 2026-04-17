@@ -117,7 +117,7 @@ export default function App() {
               )}
             </div>
             <div className="pt-4 flex flex-col gap-4">
-              <Button className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20" onClick={() => window.location.href = 'mailto:soporte@vetcarecrm.com'}>
+              <Button className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20" onClick={() => window.location.href = 'mailto:imcorreamauricio@gmail.com'}>
                 Contactar Soporte
               </Button>
               <Button variant="ghost" className="w-full h-12 rounded-xl gap-2 font-bold" onClick={() => signOut(auth)}>
